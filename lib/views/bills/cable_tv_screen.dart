@@ -33,6 +33,10 @@ class _CableTvScreenState extends State<CableTvScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.user?.phone != null && authProvider.user!.phone.isNotEmpty) {
+        _phoneController.text = authProvider.user!.phone;
+      }
       _loadCablePlans();
     });
   }
@@ -235,6 +239,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
                       controller: _smartcardController,
                       keyboardType: TextInputType.number,
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      onChanged: (_) => billsProvider.clearValidation(),
                       decoration: const InputDecoration(
                         hintText: 'Enter Smartcard / IUC',
                         prefixIcon: Icon(Icons.credit_card_rounded, color: Color(0xFF94A3B8)),
@@ -253,9 +258,9 @@ class _CableTvScreenState extends State<CableTvScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              // Customer Name Banner
+              // Validation Helper Banner / Customer Name Banner
               if (billsProvider.validatedCustomerName != null) ...[
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -282,6 +287,18 @@ class _CableTvScreenState extends State<CableTvScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
+              ] else ...[
+                const Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded, color: Color(0xFFF59E0B), size: 16),
+                    SizedBox(width: 6),
+                    Text(
+                      'Please validate smartcard/IUC number before subscribing.',
+                      style: TextStyle(color: Color(0xFFF59E0B), fontSize: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
               ],
 
               // Package Plan Selector Dropdown
@@ -313,6 +330,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
                           hint: const Text('Select Subscription Package',
                               style: TextStyle(color: Color(0xFF94A3B8))),
                           isExpanded: true,
+                          menuMaxHeight: 320,
                           dropdownColor: const Color(0xFF1A2234),
                           icon: const Icon(Icons.arrow_drop_down_rounded, color: Colors.white),
                           items: billsProvider.cablePlans.map((plan) {
@@ -344,7 +362,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
 
               // Recipient Phone Input
               const Text(
-                'Phone Number',
+                'Phone Number for Notification',
                 style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
@@ -359,14 +377,26 @@ class _CableTvScreenState extends State<CableTvScreen> {
               ),
               const SizedBox(height: 36),
 
-              // Submit Button
+              // Submit Button - Disabled until smartcard is validated
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: billsProvider.isLoading ? null : _submitOrder,
+                  onPressed: (billsProvider.validatedCustomerName == null || billsProvider.isLoading)
+                      ? null
+                      : _submitOrder,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: billsProvider.validatedCustomerName != null ? primaryColor : const Color(0xFF334155),
+                  ),
                   child: billsProvider.isLoading
                       ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                      : const Text('Subscribe Cable TV', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      : Text(
+                          billsProvider.validatedCustomerName != null ? 'Subscribe Cable TV' : 'Validate Smartcard Number First',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: billsProvider.validatedCustomerName != null ? Colors.white : const Color(0xFF94A3B8),
+                          ),
+                        ),
                 ),
               ),
             ],

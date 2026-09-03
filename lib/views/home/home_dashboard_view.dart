@@ -3,10 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../widgets/receipt_modal.dart';
+import '../vtu/airtime_topup_screen.dart';
+import '../vtu/data_bundles_screen.dart';
+import '../bills/electricity_bills_screen.dart';
+import '../bills/cable_tv_screen.dart';
+import '../bills/exam_pins_screen.dart';
+import '../specialized/betting_topup_screen.dart';
+import '../specialized/airtime_to_cash_screen.dart';
+import '../specialized/voucher_printing_screen.dart';
+import '../wallet/wallet_view.dart';
 
 class HomeDashboardView extends StatefulWidget {
   final Function(int) onTabSwitch;
@@ -22,6 +32,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AuthProvider>(context, listen: false).fetchProfile();
       Provider.of<DashboardProvider>(context, listen: false).fetchDashboardData();
     });
   }
@@ -36,6 +47,18 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     final primaryColor = Theme.of(context).primaryColor;
     final currencySymbol = configProvider.currencySymbol;
     final services = configProvider.config?.services;
+
+    final rawName = user?.name.trim() ?? '';
+    final rawUsername = user?.username.trim() ?? '';
+
+    final displayName = rawName.isNotEmpty
+        ? rawName
+        : (rawUsername.isNotEmpty ? rawUsername : 'User');
+
+    final avatarUrl = user?.avatar;
+    final bool hasAvatar = avatarUrl != null &&
+        avatarUrl.isNotEmpty &&
+        (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://'));
 
     final balance = user?.wallet?.balance ?? 0.0;
     final formattedBalance = '$currencySymbol${balance.toStringAsFixed(2)}';
@@ -53,36 +76,40 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Header Bar
+                // Top Header Bar - Tapping user info navigates to Profile Tab (index 3)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: primaryColor.withValues(alpha: 0.2),
-                          child: Icon(Icons.person_rounded, color: primaryColor),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Hello, ${user?.name ?? 'User'} 👋',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                    GestureDetector(
+                      onTap: () => widget.onTabSwitch(3),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: primaryColor.withValues(alpha: 0.2),
+                            backgroundImage: hasAvatar ? CachedNetworkImageProvider(avatarUrl) : null,
+                            child: !hasAvatar ? Icon(Icons.person_rounded, color: primaryColor) : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Hello, $displayName 👋',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
                               ),
-                            ),
-                            Text(
-                              '@${user?.username ?? 'user'}',
-                              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ],
+                              Text(
+                                rawUsername.isNotEmpty ? '@$rawUsername' : 'Tap to view profile',
+                                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
@@ -232,7 +259,14 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                       ),
                     ),
                     TextButton(
-                      onPressed: () => widget.onTabSwitch(2),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const WalletView(initialTabIndex: 2),
+                          ),
+                        );
+                      },
                       child: Text(
                         'View All',
                         style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
@@ -267,10 +301,59 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
       );
     }
 
-    final dva = dvaList.isNotEmpty ? dvaList.first : null;
-    final bankName = dva?.bankName ?? 'Wema Bank';
-    final accountNo = dva?.accountNumber ?? 'Generating DVA...';
-    final accountName = dva?.accountName ?? 'Harkone Virtual Wallet';
+    if (dvaList.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF192234),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.account_balance_wallet_outlined, color: primaryColor, size: 24),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'No Virtual Account Generated',
+                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Generate a dedicated bank account for 1-tap instant wallet funding',
+                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            ElevatedButton(
+              onPressed: () => _showBvnModal(context, dashboardProvider),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                backgroundColor: primaryColor,
+              ),
+              child: const Text('Generate', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final dva = dvaList.first;
+    final bankName = dva.bankName;
+    final accountNo = dva.accountNumber;
+    final accountName = dva.accountName;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -322,22 +405,152 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
               ),
             ],
           ),
-          if (dva != null && accountNo.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.copy_rounded, color: Color(0xFF94A3B8), size: 20),
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: accountNo));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('$bankName account number copied!'),
-                    duration: const Duration(seconds: 2),
-                    backgroundColor: primaryColor,
-                  ),
-                );
-              },
-            ),
+          IconButton(
+            icon: const Icon(Icons.copy_rounded, color: Color(0xFF94A3B8), size: 20),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: accountNo));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$bankName account number copied!'),
+                  duration: const Duration(seconds: 2),
+                  backgroundColor: primaryColor,
+                ),
+              );
+            },
+          ),
         ],
       ),
+    );
+  }
+
+  void _showBvnModal(BuildContext context, DashboardProvider dashboardProvider) {
+    final bvnController = TextEditingController();
+    final primaryColor = Theme.of(context).primaryColor;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        bool isSubmitting = false;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF151C2C),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.shield_outlined, color: primaryColor, size: 28),
+                        ),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Generate Virtual Account',
+                                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'CBN Verification Requirement',
+                                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Please enter your 11-digit Bank Verification Number (BVN) to create your dedicated bank account for instant wallet funding.',
+                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: bvnController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 11,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 2.0),
+                      decoration: const InputDecoration(
+                        labelText: 'Enter 11-Digit BVN',
+                        prefixIcon: Icon(Icons.fingerprint_rounded, color: Color(0xFF94A3B8)),
+                        counterText: '',
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                                final bvn = bvnController.text.trim();
+                                if (bvn.length != 11) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('BVN must be exactly 11 digits.'),
+                                      backgroundColor: Color(0xFFEF4444),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setModalState(() => isSubmitting = true);
+                                final response = await dashboardProvider.generateDva(bvn);
+
+                                if (!context.mounted) return;
+
+                                if (response.status) {
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(response.message.isNotEmpty
+                                          ? response.message
+                                          : 'Virtual Bank Account generated successfully!'),
+                                      backgroundColor: const Color(0xFF10B981),
+                                    ),
+                                  );
+                                } else {
+                                  setModalState(() => isSubmitting = false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(response.message),
+                                      backgroundColor: const Color(0xFFEF4444),
+                                    ),
+                                  );
+                                }
+                              },
+                        child: isSubmitting
+                            ? const SpinKitThreeBounce(color: Colors.white, size: 20)
+                            : const Text('Submit BVN & Generate Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -346,28 +559,28 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     final actions = <Map<String, dynamic>>[];
 
     if (services?.airtime ?? true) {
-      actions.add({'title': 'Airtime', 'icon': Icons.phone_android_rounded, 'color': const Color(0xFF3B82F6)});
+      actions.add({'key': 'airtime', 'title': 'Airtime', 'icon': Icons.phone_android_rounded, 'color': const Color(0xFF3B82F6)});
     }
     if (services?.data ?? true) {
-      actions.add({'title': 'Data Bundle', 'icon': Icons.wifi_rounded, 'color': const Color(0xFF10B981)});
+      actions.add({'key': 'data', 'title': 'Data Bundle', 'icon': Icons.wifi_rounded, 'color': const Color(0xFF10B981)});
     }
     if (services?.electricity ?? true) {
-      actions.add({'title': 'Electricity', 'icon': Icons.lightbulb_rounded, 'color': const Color(0xFFA855F7)});
+      actions.add({'key': 'electricity', 'title': 'Electricity', 'icon': Icons.lightbulb_rounded, 'color': const Color(0xFFA855F7)});
     }
     if (services?.cable ?? true) {
-      actions.add({'title': 'Cable TV', 'icon': Icons.tv_rounded, 'color': const Color(0xFFF59E0B)});
+      actions.add({'key': 'cable', 'title': 'Cable TV', 'icon': Icons.tv_rounded, 'color': const Color(0xFFF59E0B)});
     }
     if (services?.epin ?? true) {
-      actions.add({'title': 'Exam PINs', 'icon': Icons.school_rounded, 'color': const Color(0xFFEC4899)});
+      actions.add({'key': 'epin', 'title': 'Exam PINs', 'icon': Icons.school_rounded, 'color': const Color(0xFFEC4899)});
     }
     if (services?.betting ?? true) {
-      actions.add({'title': 'Betting', 'icon': Icons.sports_soccer_rounded, 'color': const Color(0xFF06B6D4)});
+      actions.add({'key': 'betting', 'title': 'Betting', 'icon': Icons.sports_soccer_rounded, 'color': const Color(0xFF06B6D4)});
     }
     if (services?.airtimeToCash ?? true) {
-      actions.add({'title': 'Airtime to Cash', 'icon': Icons.currency_exchange_rounded, 'color': const Color(0xFF84CC16)});
+      actions.add({'key': 'airtimeToCash', 'title': 'Airtime to Cash', 'icon': Icons.currency_exchange_rounded, 'color': const Color(0xFF84CC16)});
     }
-    if (services?.rechargeCardPrinting ?? false) {
-      actions.add({'title': 'Print Cards', 'icon': Icons.print_rounded, 'color': const Color(0xFF6366F1)});
+    if (services?.rechargeCardPrinting ?? true) {
+      actions.add({'key': 'rechargeCardPrinting', 'title': 'Airtime PINs', 'icon': Icons.print_rounded, 'color': const Color(0xFF6366F1)});
     }
 
     return GridView.builder(
@@ -386,8 +599,38 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
 
         return GestureDetector(
           onTap: () {
-            // Switch to Services tab
-            widget.onTabSwitch(1);
+            final key = item['key'] as String;
+            Widget targetScreen;
+            switch (key) {
+              case 'airtime':
+                targetScreen = const AirtimeTopupScreen();
+                break;
+              case 'data':
+                targetScreen = const DataBundlesScreen();
+                break;
+              case 'electricity':
+                targetScreen = const ElectricityBillsScreen();
+                break;
+              case 'cable':
+                targetScreen = const CableTvScreen();
+                break;
+              case 'epin':
+                targetScreen = const ExamPinsScreen();
+                break;
+              case 'betting':
+                targetScreen = const BettingTopupScreen();
+                break;
+              case 'airtimeToCash':
+                targetScreen = const AirtimeToCashScreen();
+                break;
+              case 'rechargeCardPrinting':
+                targetScreen = const VoucherPrintingScreen();
+                break;
+              default:
+                widget.onTabSwitch(1);
+                return;
+            }
+            Navigator.push(context, MaterialPageRoute(builder: (_) => targetScreen));
           },
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

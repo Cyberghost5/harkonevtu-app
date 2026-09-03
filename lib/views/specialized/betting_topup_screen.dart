@@ -18,7 +18,7 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
   final _customerIdController = TextEditingController();
   final _amountController = TextEditingController();
 
-  int _selectedPlatformIndex = 0;
+  Map<String, dynamic>? _selectedPlatform;
 
   final List<Map<String, dynamic>> _platforms = [
     {'key': 'bet9ja', 'name': 'Bet9ja', 'color': const Color(0xFF16A34A)},
@@ -27,7 +27,19 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
     {'key': 'bangbet', 'name': 'BangBet', 'color': const Color(0xFFCA8A04)},
     {'key': 'merrybet', 'name': 'MerryBet', 'color': const Color(0xFF9333EA)},
     {'key': 'betway', 'name': 'BetWay', 'color': const Color(0xFF2563EB)},
+    {'key': 'nairabet', 'name': 'NairaBet', 'color': const Color(0xFF059669)},
+    {'key': 'betking', 'name': 'BetKing (KingMakers)', 'color': const Color(0xFF1D4ED8)},
+    {'key': 'paripesa', 'name': 'Paripesa', 'color': const Color(0xFFD97706)},
+    {'key': 'msport', 'name': 'MSport', 'color': const Color(0xFFE11D48)},
+    {'key': 'melbet', 'name': 'MelBet', 'color': const Color(0xFFF59E0B)},
+    {'key': '22bet', 'name': '22Bet', 'color': const Color(0xFF0D9488)},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedPlatform = _platforms.first;
+  }
 
   @override
   void dispose() {
@@ -48,7 +60,7 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
       return;
     }
 
-    final platform = _platforms[_selectedPlatformIndex]['key'] as String;
+    final platform = (_selectedPlatform?['key'] ?? 'bet9ja') as String;
     final specProvider = Provider.of<SpecializedProvider>(context, listen: false);
     final success = await specProvider.validateBettingAccount(
       platform: platform,
@@ -89,7 +101,7 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
       return;
     }
 
-    final platformName = _platforms[_selectedPlatformIndex]['name'] as String;
+    final platformName = (_selectedPlatform?['name'] ?? 'Betting') as String;
     final currencySymbol = Provider.of<AppConfigProvider>(context, listen: false).currencySymbol;
 
     showModalBottomSheet(
@@ -102,10 +114,8 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
         onPinConfirmed: (pin) => _executeFunding(customerId, amount, pin),
       ),
     );
-  }
-
-  void _executeFunding(String customerId, double amount, String pin) async {
-    final platformKey = _platforms[_selectedPlatformIndex]['key'] as String;
+  }  void _executeFunding(String customerId, double amount, String pin) async {
+    final platformKey = (_selectedPlatform?['key'] ?? 'bet9ja') as String;
     final specProvider = Provider.of<SpecializedProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
@@ -129,6 +139,7 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
           backgroundColor: const Color(0xFF10B981),
         ),
       );
+
       _customerIdController.clear();
       _amountController.clear();
       specProvider.clearValidation();
@@ -148,6 +159,7 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
   @override
   Widget build(BuildContext context) {
     final specProvider = Provider.of<SpecializedProvider>(context);
+    final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
       appBar: AppBar(
@@ -159,67 +171,52 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Betting Platform Dropdown
               const Text(
                 'Select Betting Platform',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 8),
 
-              // Platforms Grid
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.1,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A2234),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF232D42)),
                 ),
-                itemCount: _platforms.length,
-                itemBuilder: (context, index) {
-                  final plat = _platforms[index];
-                  final isSelected = _selectedPlatformIndex == index;
-                  final platColor = plat['color'] as Color;
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedPlatformIndex = index;
-                      });
-                      specProvider.clearValidation();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? platColor.withValues(alpha: 0.2)
-                            : const Color(0xFF1A2234),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected ? platColor : const Color(0xFF232D42),
-                          width: isSelected ? 2 : 1,
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<Map<String, dynamic>>(
+                    value: _selectedPlatform,
+                    isExpanded: true,
+                    menuMaxHeight: 320,
+                    dropdownColor: const Color(0xFF1A2234),
+                    icon: const Icon(Icons.arrow_drop_down_rounded, color: Colors.white),
+                    items: _platforms.map((plat) {
+                      final color = plat['color'] as Color;
+                      return DropdownMenuItem<Map<String, dynamic>>(
+                        value: plat,
+                        child: Row(
+                          children: [
+                            Icon(Icons.sports_soccer_rounded, color: color, size: 20),
+                            const SizedBox(width: 12),
+                            Text(plat['name'] as String, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                          ],
                         ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.sports_soccer_rounded, color: platColor, size: 26),
-                          const SizedBox(height: 6),
-                          Text(
-                            plat['name'] as String,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFF94A3B8),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedPlatform = val;
+                        });
+                        specProvider.clearValidation();
+                      }
+                    },
+                  ),
+                ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               // Customer User ID Input & Validation Button
               const Text(
@@ -235,6 +232,7 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
                       controller: _customerIdController,
                       keyboardType: TextInputType.text,
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      onChanged: (_) => specProvider.clearValidation(),
                       decoration: const InputDecoration(
                         hintText: 'Enter Account / User ID',
                         prefixIcon: Icon(Icons.person_outline_rounded, color: Color(0xFF94A3B8)),
@@ -253,9 +251,9 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              // Customer Name Banner
+              // Validation Helper Banner / Customer Name Banner
               if (specProvider.validatedCustomerName != null) ...[
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -282,6 +280,18 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
+              ] else ...[
+                const Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded, color: Color(0xFFF59E0B), size: 16),
+                    SizedBox(width: 6),
+                    Text(
+                      'Please validate betting account/user ID before funding.',
+                      style: TextStyle(color: Color(0xFFF59E0B), fontSize: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
               ],
 
               // Amount Input
@@ -301,14 +311,26 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
               ),
               const SizedBox(height: 36),
 
-              // Submit Button
+              // Submit Button - Disabled until betting account is validated
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: specProvider.isLoading ? null : _submitOrder,
+                  onPressed: (specProvider.validatedCustomerName == null || specProvider.isLoading)
+                      ? null
+                      : _submitOrder,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: specProvider.validatedCustomerName != null ? primaryColor : const Color(0xFF334155),
+                  ),
                   child: specProvider.isLoading
                       ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                      : const Text('Fund Betting Wallet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      : Text(
+                          specProvider.validatedCustomerName != null ? 'Fund Betting Wallet' : 'Validate Betting Account First',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: specProvider.validatedCustomerName != null ? Colors.white : const Color(0xFF94A3B8),
+                          ),
+                        ),
                 ),
               ),
             ],

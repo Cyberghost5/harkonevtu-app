@@ -76,4 +76,27 @@ class DashboardProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<ApiResponse> generateDva(String bvn) async {
+    _isLoadingDva = true;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.post('/user/dva/generate', data: {
+        'bvn': bvn.trim(),
+      });
+
+      if (response.status) {
+        await fetchDvaAccounts();
+      } else {
+        _isLoadingDva = false;
+        notifyListeners();
+      }
+      return response;
+    } catch (_) {
+      _isLoadingDva = false;
+      notifyListeners();
+      return ApiResponse(status: false, message: 'Failed to generate Virtual Bank Account.');
+    }
+  }
 }

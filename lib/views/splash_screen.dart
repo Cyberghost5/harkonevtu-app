@@ -140,16 +140,18 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
               const SizedBox(height: 28),
 
-              // App Name
-              Text(
-                configProvider.appName,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 1.1,
-                    ),
-              ),
-              const SizedBox(height: 8),
+              // App Name (only rendered when loaded from config)
+              if (configProvider.appName.isNotEmpty) ...[
+                Text(
+                  configProvider.appName,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.1,
+                      ),
+                ),
+                const SizedBox(height: 8),
+              ],
 
               Text(
                 'Fast • Secure • Automated VTU',

@@ -8,7 +8,8 @@ import '../../providers/specialized_provider.dart';
 import '../widgets/receipt_modal.dart';
 
 class WalletView extends StatefulWidget {
-  const WalletView({super.key});
+  final int initialTabIndex;
+  const WalletView({super.key, this.initialTabIndex = 0});
 
   @override
   State<WalletView> createState() => _WalletViewState();
@@ -21,7 +22,11 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: widget.initialTabIndex.clamp(0, 2),
+    );
   }
 
   @override

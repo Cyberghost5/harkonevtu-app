@@ -56,6 +56,29 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
     });
   }
 
+  void _onPhoneChanged(String val) async {
+    if (val.length >= 10) {
+      final vtuProvider = Provider.of<VtuProvider>(context, listen: false);
+      final network = await vtuProvider.lookupNetwork(val);
+      if (network != null && mounted) {
+        final lower = network.toLowerCase();
+        if (_selectedNetwork != lower) {
+          setState(() {
+            _selectedNetwork = lower;
+          });
+          _loadDataPlans();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Auto-detected network: ${network.toUpperCase()}'),
+              duration: const Duration(seconds: 2),
+              backgroundColor: const Color(0xFF10B981),
+            ),
+          );
+        }
+      }
+    }
+  }
+
   void _submitOrder() {
     final phone = _phoneController.text.trim();
 
@@ -205,6 +228,7 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                onChanged: _onPhoneChanged,
                 decoration: const InputDecoration(
                   hintText: 'e.g. 08012345678',
                   prefixIcon: Icon(Icons.phone_android_rounded, color: Color(0xFF94A3B8)),

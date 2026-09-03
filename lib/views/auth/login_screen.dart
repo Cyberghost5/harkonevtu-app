@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
+import '../../providers/dashboard_provider.dart';
+import '../navigation/main_navigation_shell.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final Function(Widget) onNavigate;
-  final VoidCallback onLoginSuccess;
+  final VoidCallback? onLoginSuccess;
 
   const LoginScreen({
     super.key,
     required this.onNavigate,
-    required this.onLoginSuccess,
+    this.onLoginSuccess,
   });
 
   @override
@@ -37,6 +40,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+
     final success = await authProvider.login(
       _loginController.text.trim(),
       _passwordController.text,
@@ -51,7 +56,12 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: Color(0xFF10B981),
         ),
       );
-      widget.onLoginSuccess();
+      await dashboardProvider.fetchDashboardData();
+      if (!mounted) return;
+      widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
+      if (widget.onLoginSuccess != null) {
+        widget.onLoginSuccess!();
+      }
     } else {
       final errorMsg = authProvider.errorMessage ?? 'Login failed. Please check credentials.';
       ScaffoldMessenger.of(context).showSnackBar(
@@ -65,12 +75,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleBiometricsLogin() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+
     final authenticated = await authProvider.authenticateWithBiometrics();
     if (!mounted) return;
 
     if (authenticated) {
       if (authProvider.isAuthenticated) {
-        widget.onLoginSuccess();
+        await dashboardProvider.fetchDashboardData();
+        if (!mounted) return;
+        widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
+        if (widget.onLoginSuccess != null) {
+          widget.onLoginSuccess!();
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -99,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo & Header
+                  // Dynamic Logo & Header
                   Center(
                     child: Container(
                       padding: const EdgeInsets.all(16),
@@ -107,7 +124,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: primaryColor.withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.bolt_rounded, size: 48, color: primaryColor),
+                      child: configProvider.config?.logo1Url != null &&
+                              configProvider.config!.logo1Url!.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: configProvider.config!.logo1Url!,
+                              height: 56,
+                              width: 56,
+                              errorWidget: (_, _, _) => Icon(Icons.bolt_rounded, size: 56, color: primaryColor),
+                            )
+                          : Icon(Icons.bolt_rounded, size: 56, color: primaryColor),
                     ),
                   ),
                   const SizedBox(height: 20),

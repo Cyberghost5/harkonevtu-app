@@ -66,15 +66,26 @@ class VtuProvider extends ChangeNotifier {
   Future<void> fetchDataPlans(String networkKey) async {
     _isLoading = true;
     _errorMessage = null;
+    _dataPlans = [];
     notifyListeners();
 
     try {
-      final response = await _apiClient.get('/data/plans', queryParameters: {'network': networkKey.toLowerCase()});
+      var response = await _apiClient.post('/data/plans', data: {'network': networkKey.toLowerCase()});
+      if (!response.status || response.data == null) {
+        response = await _apiClient.get('/data/plans', queryParameters: {'network': networkKey.toLowerCase()});
+      }
+
       if (response.status && response.data != null) {
-        final data = response.data as Map<String, dynamic>;
-        final list = data['plans'] as List<dynamic>?;
-        if (list != null) {
-          _dataPlans = list
+        dynamic listData;
+        if (response.data is List) {
+          listData = response.data;
+        } else if (response.data is Map<String, dynamic>) {
+          final map = response.data as Map<String, dynamic>;
+          listData = map['plans'] ?? map['data'] ?? map['data_plans'];
+        }
+
+        if (listData is List) {
+          _dataPlans = listData
               .map((item) => DataPlanModel.fromJson(item as Map<String, dynamic>))
               .toList();
         }

@@ -74,7 +74,7 @@ class UserModel {
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] ?? 0,
-      name: json['name'] ?? '',
+      name: json['name'] ?? json['full_name'] ?? json['username'] ?? '',
       username: json['username'] ?? '',
       email: json['email'] ?? '',
       phone: json['phone'] ?? '',
@@ -82,7 +82,7 @@ class UserModel {
       isActive: json['is_active'] ?? true,
       referralCode: json['referral_code'],
       kycStatus: json['kyc_status'],
-      avatar: json['avatar'],
+      avatar: json['avatar'] ?? json['profile_photo_url'] ?? json['avatar_url'] ?? json['profile_picture'],
       wallet: json['wallet'] != null ? WalletModel.fromJson(json['wallet']) : null,
     );
   }

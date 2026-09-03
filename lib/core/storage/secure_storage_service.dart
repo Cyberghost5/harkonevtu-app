@@ -70,6 +70,23 @@ class SecureStorageService {
   }
 
   // Biometrics Preference
+  static const String _keyBioLogin = 'biometric_login_credentials';
+
+  Future<void> saveBiometricCredentials(String login, String password) async {
+    await _storage.write(key: _keyBioLogin, value: jsonEncode({'login': login, 'password': password}));
+  }
+
+  Future<Map<String, String>?> getBiometricCredentials() async {
+    final val = await _storage.read(key: _keyBioLogin);
+    if (val != null) {
+      try {
+        final decoded = jsonDecode(val) as Map<String, dynamic>;
+        return {'login': decoded['login'].toString(), 'password': decoded['password'].toString()};
+      } catch (_) {}
+    }
+    return null;
+  }
+
   Future<void> setBiometricsEnabled(bool enabled) async {
     await _storage.write(key: _keyBiometrics, value: enabled.toString());
   }
@@ -87,6 +104,17 @@ class SecureStorageService {
 
   Future<void> setFirstTimeCompleted() async {
     await _storage.write(key: _keyFirstTime, value: 'false');
+  }
+
+  // Theme Mode Storage
+  static const String _keyThemeMode = 'app_theme_mode';
+
+  Future<void> saveThemeMode(String mode) async {
+    await _storage.write(key: _keyThemeMode, value: mode);
+  }
+
+  Future<String?> getThemeMode() async {
+    return await _storage.read(key: _keyThemeMode);
   }
 
   // Clear Session

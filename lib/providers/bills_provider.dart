@@ -122,14 +122,32 @@ class BillsProvider extends ChangeNotifier {
 
   Future<void> fetchCablePlans(dynamic providerId) async {
     _isLoading = true;
+    _cablePlans = [];
     notifyListeners();
 
     try {
-      final response = await _apiClient.get('/bills/cable/plans', queryParameters: {'provider_id': providerId});
+      var response = await _apiClient.post('/bills/cable/plans', data: {
+        'provider_id': providerId,
+        'cable_id': providerId,
+      });
+
+      if (!response.status || response.data == null) {
+        response = await _apiClient.get('/bills/cable/plans', queryParameters: {'provider_id': providerId});
+      }
+
       if (response.status && response.data != null) {
-        final list = response.data['plans'] as List<dynamic>?;
-        if (list != null) {
-          _cablePlans = list.map((item) => CablePlanModel.fromJson(item as Map<String, dynamic>)).toList();
+        dynamic listData;
+        if (response.data is List) {
+          listData = response.data;
+        } else if (response.data is Map<String, dynamic>) {
+          final map = response.data as Map<String, dynamic>;
+          listData = map['plans'] ?? map['data'] ?? map['packages'];
+        }
+
+        if (listData is List) {
+          _cablePlans = listData
+              .map((item) => CablePlanModel.fromJson(item as Map<String, dynamic>))
+              .toList();
         }
       }
     } catch (_) {

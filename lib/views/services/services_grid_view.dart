@@ -77,11 +77,11 @@ class ServicesGridView extends StatelessWidget {
       },
       {
         'key': 'recharge_card_printing',
-        'title': 'Print Recharge Cards',
-        'desc': 'Generate physical paper pins & serials',
+        'title': 'Airtime PINs & Vouchers',
+        'desc': 'Generate physical paper pins & serial vouchers',
         'icon': Icons.print_rounded,
         'color': const Color(0xFF6366F1),
-        'enabled': services?.rechargeCardPrinting ?? false,
+        'enabled': services?.rechargeCardPrinting ?? true,
       },
     ];
 

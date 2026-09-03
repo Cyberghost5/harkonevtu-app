@@ -1,21 +1,46 @@
 import 'package:flutter/material.dart';
 import '../core/api/api_client.dart';
+import '../core/storage/secure_storage_service.dart';
 import '../models/app_config_model.dart';
 
 class AppConfigProvider extends ChangeNotifier {
   final ApiClient _apiClient = ApiClient();
+  final SecureStorageService _storage = SecureStorageService();
 
   AppConfigModel? _config;
   bool _isLoading = true;
   bool _isInitialized = false;
   String? _errorMessage;
+  ThemeMode _themeMode = ThemeMode.dark;
 
   AppConfigModel? get config => _config;
   bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
   String? get errorMessage => _errorMessage;
+  ThemeMode get themeMode => _themeMode;
+  bool get isDarkMode => _themeMode == ThemeMode.dark;
 
-  String get appName => _config?.appName ?? 'Harkone VTU';
+  AppConfigProvider() {
+    _loadThemeMode();
+  }
+
+  Future<void> _loadThemeMode() async {
+    final mode = await _storage.getThemeMode();
+    if (mode == 'light') {
+      _themeMode = ThemeMode.light;
+    } else {
+      _themeMode = ThemeMode.dark;
+    }
+    notifyListeners();
+  }
+
+  void toggleTheme(bool isDark) {
+    _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    _storage.saveThemeMode(isDark ? 'dark' : 'light');
+    notifyListeners();
+  }
+
+  String get appName => _config?.appName ?? '';
   String get themeColorHex => _config?.themeColor ?? '#45bae6';
   String get currencySymbol => _config?.currencySymbol ?? '₦';
   String get currency => _config?.currency ?? 'NGN';

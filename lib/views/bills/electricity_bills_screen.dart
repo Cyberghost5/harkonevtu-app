@@ -27,9 +27,14 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.user?.phone != null && authProvider.user!.phone.isNotEmpty) {
+        _phoneController.text = authProvider.user!.phone;
+      }
+
       final billsProvider = Provider.of<BillsProvider>(context, listen: false);
       billsProvider.fetchDiscos().then((_) {
-        if (billsProvider.discos.isNotEmpty) {
+        if (billsProvider.discos.isNotEmpty && mounted) {
           setState(() {
             _selectedDisco = billsProvider.discos.first;
           });
@@ -278,6 +283,7 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
                   child: DropdownButton<DiscoModel>(
                     value: _selectedDisco,
                     isExpanded: true,
+                    menuMaxHeight: 320,
                     dropdownColor: const Color(0xFF1A2234),
                     icon: const Icon(Icons.arrow_drop_down_rounded, color: Colors.white),
                     items: billsProvider.discos.map((disco) {
@@ -363,6 +369,7 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
                       controller: _meterController,
                       keyboardType: TextInputType.number,
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      onChanged: (_) => billsProvider.clearValidation(),
                       decoration: const InputDecoration(
                         hintText: 'Enter Meter Number',
                         prefixIcon: Icon(Icons.speed_rounded, color: Color(0xFF94A3B8)),
@@ -381,9 +388,9 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              // Validated Customer Info Banner
+              // Validation Helper Banner / Customer Info
               if (billsProvider.validatedCustomerName != null) ...[
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -420,6 +427,18 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
+              ] else ...[
+                const Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded, color: Color(0xFFF59E0B), size: 16),
+                    SizedBox(width: 6),
+                    Text(
+                      'Please validate meter number before paying.',
+                      style: TextStyle(color: Color(0xFFF59E0B), fontSize: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
               ],
 
               // Amount Input
@@ -456,14 +475,26 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
               ),
               const SizedBox(height: 36),
 
-              // Submit Button
+              // Submit Button - Disabled until meter is validated
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: billsProvider.isLoading ? null : _submitOrder,
+                  onPressed: (billsProvider.validatedCustomerName == null || billsProvider.isLoading)
+                      ? null
+                      : _submitOrder,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: billsProvider.validatedCustomerName != null ? primaryColor : const Color(0xFF334155),
+                  ),
                   child: billsProvider.isLoading
                       ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                      : const Text('Pay Electricity Bill', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      : Text(
+                          billsProvider.validatedCustomerName != null ? 'Pay Electricity Bill' : 'Validate Meter Number First',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: billsProvider.validatedCustomerName != null ? Colors.white : const Color(0xFF94A3B8),
+                          ),
+                        ),
                 ),
               ),
             ],

@@ -42,9 +42,9 @@ class _HarkoneVtuAppState extends State<HarkoneVtuApp> {
           return MaterialApp(
             title: configProvider.appName,
             debugShowCheckedModeBanner: false,
-            theme: DynamicTheme.buildDarkTheme(themeColor),
+            theme: DynamicTheme.buildLightTheme(themeColor),
             darkTheme: DynamicTheme.buildDarkTheme(themeColor),
-            themeMode: ThemeMode.dark,
+            themeMode: configProvider.themeMode,
             home: _currentScreen ??
                 SplashScreen(
                   onNavigate: (screen) {

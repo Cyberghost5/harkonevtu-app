@@ -29,6 +29,18 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
   final List<double> _quickAmounts = [100, 200, 500, 1000, 2000, 5000];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.user?.phone != null && authProvider.user!.phone.isNotEmpty) {
+        _phoneController.text = authProvider.user!.phone;
+        _onPhoneChanged(authProvider.user!.phone);
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _phoneController.dispose();
     _amountController.dispose();

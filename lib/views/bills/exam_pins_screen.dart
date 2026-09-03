@@ -28,6 +28,17 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.user?.phone != null && authProvider.user!.phone.isNotEmpty) {
+        _phoneController.text = authProvider.user!.phone;
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _phoneController.dispose();
     super.dispose();

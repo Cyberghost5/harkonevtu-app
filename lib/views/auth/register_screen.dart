@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/app_config_provider.dart';
+import 'login_screen.dart';
 import 'otp_verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   final Function(Widget) onNavigate;
-  final VoidCallback onLoginSuccess;
+  final VoidCallback? onLoginSuccess;
 
   const RegisterScreen({
     super.key,
     required this.onNavigate,
-    required this.onLoginSuccess,
+    this.onLoginSuccess,
   });
 
   @override
@@ -37,6 +39,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _referralController.dispose();
     super.dispose();
+  }
+
+  void _navigateToLogin() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      widget.onNavigate(
+        LoginScreen(
+          onNavigate: widget.onNavigate,
+          onLoginSuccess: widget.onLoginSuccess,
+        ),
+      );
+    }
   }
 
   void _handleRegister() async {
@@ -82,14 +97,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final configProvider = Provider.of<AppConfigProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
+    final appTitle = configProvider.appName.isNotEmpty ? configProvider.appName : 'Us';
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Account'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: _navigateToLogin,
         ),
       ),
       body: SafeArea(
@@ -101,7 +118,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Join Harkone VTU',
+                  'Join $appTitle',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -211,7 +228,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     const Text('Already have an account? ', style: TextStyle(color: Color(0xFF94A3B8))),
                     GestureDetector(
-                      onTap: () => Navigator.of(context).maybePop(),
+                      onTap: _navigateToLogin,
                       child: Text(
                         'Sign In',
                         style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),

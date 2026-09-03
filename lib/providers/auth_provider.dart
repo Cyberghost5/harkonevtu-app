@@ -55,15 +55,25 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> authenticateWithBiometrics() async {
-    if (!_isBiometricAvailable) return false;
     try {
+      final canCheck = await _localAuth.canCheckBiometrics;
+      final isSupported = await _localAuth.isDeviceSupported();
+      if (!canCheck && !isSupported) return false;
+
       final didAuthenticate = await _localAuth.authenticate(
-        localizedReason: 'Authenticate to log into Harkone VTU',
+        localizedReason: 'Authenticate to access your account',
         options: const AuthenticationOptions(
-          biometricOnly: true,
           stickyAuth: true,
+          useErrorDialogs: true,
         ),
       );
+
+      if (didAuthenticate) {
+        final creds = await _storage.getBiometricCredentials();
+        if (creds != null && creds['login'] != null && creds['password'] != null) {
+          return await login(creds['login']!, creds['password']!);
+        }
+      }
       return didAuthenticate;
     } catch (_) {
       return false;
@@ -87,20 +97,16 @@ class AuthProvider extends ChangeNotifier {
         'password': password,
       });
 
-      if (response.status && response.data != null) {
-        final data = response.data as Map<String, dynamic>;
-        final tokenStr = data['token']?.toString();
-        if (tokenStr != null) {
-          _token = tokenStr;
-          await _storage.saveToken(tokenStr);
-        }
-
-        if (data['user'] != null) {
-          _user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
-          await _storage.saveUserData(_user!.toJson());
-        }
-
-        _isLoading = false;
+      if (response.status) {
+        if (response.data != null && response.data['token'] != null) {
+          _token = response.data['token'].toString();
+          await _storage.saveToken(_token!);
+          await _storage.saveBiometricCredentials(loginInput, password);
+          if (response.data['user'] != null) {
+            _user = UserModel.fromJson(response.data['user'] as Map<String, dynamic>);
+            await _storage.saveUserData(_user!.toJson());
+          }
+        } _isLoading = false;
         notifyListeners();
         return true;
       } else {

@@ -83,6 +83,27 @@ class SpecializedProvider extends ChangeNotifier {
     }
   }
 
+  Map<String, dynamic>? _airtimeToCashSettings;
+  Map<String, dynamic>? get airtimeToCashSettings => _airtimeToCashSettings;
+
+  Future<void> fetchAirtimeToCashSettings() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.get('/airtime-to-cash/settings');
+      if (response.status && response.data != null) {
+        if (response.data is Map<String, dynamic>) {
+          _airtimeToCashSettings = response.data as Map<String, dynamic>;
+        }
+      }
+    } catch (_) {
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<ApiResponse> submitAirtimeToCash({
     required String network,
     required String phone,

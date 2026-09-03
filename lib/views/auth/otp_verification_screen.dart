@@ -3,17 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/auth_provider.dart';
+import '../navigation/main_navigation_shell.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
   final Function(Widget) onNavigate;
-  final VoidCallback onVerificationSuccess;
+  final VoidCallback? onVerificationSuccess;
 
   const OtpVerificationScreen({
     super.key,
     required this.email,
     required this.onNavigate,
-    required this.onVerificationSuccess,
+    this.onVerificationSuccess,
   });
 
   @override
@@ -94,7 +95,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           backgroundColor: Color(0xFF10B981),
         ),
       );
-      widget.onVerificationSuccess();
+      widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
+      if (widget.onVerificationSuccess != null) {
+        widget.onVerificationSuccess!();
+      }
     } else {
       final errorMsg = authProvider.errorMessage ?? 'Verification failed.';
       ScaffoldMessenger.of(context).showSnackBar(

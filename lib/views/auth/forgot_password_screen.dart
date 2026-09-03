@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/auth_provider.dart';
+import 'login_screen.dart';
 import 'reset_password_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -21,6 +22,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   void dispose() {
     _emailController.dispose();
     super.dispose();
+  }
+
+  void _navigateToLogin() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      widget.onNavigate(
+        LoginScreen(
+          onNavigate: widget.onNavigate,
+          onLoginSuccess: () {},
+        ),
+      );
+    }
   }
 
   void _handleForgotPassword() async {
@@ -60,10 +74,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Forgot Password'),
-      ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _navigateToLogin();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Forgot Password'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: _navigateToLogin,
+          ),
+        ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(28.0),
@@ -125,6 +150,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
