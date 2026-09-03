@@ -1,6 +1,8 @@
 import 'dart:developer' as developer;
+import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../api/api_client.dart';
 
@@ -120,9 +122,12 @@ class NotificationService {
 
   Future<String?> getDeviceToken() async {
     try {
-      return await _fcm.getToken();
-    } catch (e) {
+      final token = await _fcm.getToken();
+      debugPrint('[FCM] Retrieved device token: $token');
+      return token;
+    } catch (e, stackTrace) {
       developer.log('Error getting FCM token: $e');
+      debugPrint('[FCM ERROR] Failed to get device token: $e\n$stackTrace');
       return null;
     }
   }
@@ -130,18 +135,23 @@ class NotificationService {
   Future<void> syncDeviceToken(ApiClient apiClient) async {
     try {
       final token = await getDeviceToken();
-      if (token == null || token.isEmpty) return;
+      if (token == null || token.isEmpty) {
+        debugPrint('[FCM] Device token is null/empty. Cannot sync to DB.');
+        return;
+      }
 
-      developer.log('Syncing FCM device token to backend: $token');
-      await apiClient.post(
+      debugPrint('[FCM] Syncing device token to backend: $token');
+      final response = await apiClient.post(
         '/user/device-token',
         data: {
           'fcm_token': token,
-          'device_type': 'android',
+          'device_type': Platform.isIOS ? 'ios' : 'android',
         },
       );
+      debugPrint('[FCM] Sync response: status=${response.status}, message=${response.message}');
     } catch (e) {
       developer.log('Device token sync error: $e');
+      debugPrint('[FCM ERROR] Device token sync request failed: $e');
     }
   }
 }
