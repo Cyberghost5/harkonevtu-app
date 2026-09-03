@@ -107,7 +107,9 @@ class AuthProvider extends ChangeNotifier {
             _user = UserModel.fromJson(response.data['user'] as Map<String, dynamic>);
             await _storage.saveUserData(_user!.toJson());
           }
-        } _isLoading = false;
+          NotificationService().syncDeviceToken(_apiClient);
+        }
+        _isLoading = false;
         notifyListeners();
         return true;
       } else {
@@ -157,6 +159,7 @@ class AuthProvider extends ChangeNotifier {
             _user = UserModel.fromJson(response.data['user'] as Map<String, dynamic>);
             await _storage.saveUserData(_user!.toJson());
           }
+          NotificationService().syncDeviceToken(_apiClient);
         }
         _isLoading = false;
         notifyListeners();
