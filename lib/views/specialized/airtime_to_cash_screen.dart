@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/specialized_provider.dart';
+import '../../providers/app_config_provider.dart';
+import '../../core/utils/formatters.dart';
 import '../../providers/auth_provider.dart';
 
 class AirtimeToCashScreen extends StatefulWidget {
@@ -85,8 +87,10 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final configProvider = Provider.of<AppConfigProvider>(context);
     final specProvider = Provider.of<SpecializedProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
+    final currencySymbol = configProvider.currencySymbol;
     final settings = specProvider.airtimeToCashSettings;
 
     final transferPhone = settings?['transfer_phone']?.toString() ?? '09031704109';
@@ -206,8 +210,8 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            'Allowed Range: ₦$minAmount - ₦$maxAmount per request.',
-                            style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
+                            'Allowed Range: ${AppFormatters.formatCurrency(num.tryParse(minAmount.toString()) ?? 0, currencySymbol)} - ${AppFormatters.formatCurrency(num.tryParse(maxAmount.toString()) ?? 0, currencySymbol)} per request.',
+                            style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11),
                           ),
                         ],
                       ),
@@ -218,9 +222,9 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
                     Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF192234),
+                        color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: const Color(0xFF2B364E)),
+                        border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2B364E) : const Color(0xFFE2E8F0)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,9 +233,9 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
                             children: [
                               Icon(Icons.help_outline_rounded, color: primaryColor, size: 20),
                               const SizedBox(width: 8),
-                              const Text(
+                              Text(
                                 'How to Transfer Airtime on MTN',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold, fontSize: 14),
                               ),
                             ],
                           ),

@@ -159,9 +159,12 @@ class SpecializedProvider extends ChangeNotifier {
 
     try {
       final response = await _apiClient.post('/vouchers/generate', data: {
+        'type': 'airtime',
         'network': network.toLowerCase(),
+        'value': denomination,
         'denomination': denomination,
         'quantity': quantity,
+        'transaction_pin': pin,
         'pin': pin,
       });
 

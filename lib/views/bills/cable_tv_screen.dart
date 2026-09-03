@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/bills_provider.dart';
+import '../../core/utils/formatters.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
 import '../../providers/dashboard_provider.dart';
@@ -169,6 +170,12 @@ class _CableTvScreenState extends State<CableTvScreen> {
     final primaryColor = Theme.of(context).primaryColor;
     final currencySymbol = configProvider.currencySymbol;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = Theme.of(context).cardColor;
+    final borderCol = isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0);
+    final titleCol = Theme.of(context).colorScheme.onSurface;
+    final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cable TV Subscription'),
@@ -179,7 +186,12 @@ class _CableTvScreenState extends State<CableTvScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Provider Tabs
+              // Provider Selector
+              Text(
+                'Select TV Provider',
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
               Row(
                 children: List.generate(_providers.length, (index) {
                   final prov = _providers[index];
@@ -201,10 +213,10 @@ class _CableTvScreenState extends State<CableTvScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? provColor.withValues(alpha: 0.2)
-                              : const Color(0xFF1A2234),
+                              : cardBg,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isSelected ? provColor : const Color(0xFF232D42),
+                            color: isSelected ? provColor : borderCol,
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -212,7 +224,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
                           child: Text(
                             prov['name'] as String,
                             style: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFF94A3B8),
+                              color: isSelected ? provColor : subCol,
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
@@ -226,9 +238,9 @@ class _CableTvScreenState extends State<CableTvScreen> {
               const SizedBox(height: 24),
 
               // Smartcard Number Input & Validation
-              const Text(
+              Text(
                 'Smartcard / IUC Number',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
 
@@ -344,7 +356,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
                                         style: const TextStyle(color: Colors.white, fontSize: 14),
                                         overflow: TextOverflow.ellipsis),
                                   ),
-                                  Text('$currencySymbol${plan.price.toStringAsFixed(2)}',
+                                  Text(AppFormatters.formatCurrency(plan.price, currencySymbol),
                                       style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
                                 ],
                               ),

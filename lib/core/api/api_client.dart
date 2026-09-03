@@ -91,6 +91,17 @@ class ApiClient {
     }
   }
 
+  Future<ApiResponse> delete(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
+    try {
+      final response = await _dio.delete(path, data: data, queryParameters: queryParameters);
+      return _parseResponse(response);
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse(status: false, message: e.toString());
+    }
+  }
+
   ApiResponse _parseResponse(Response response) {
     if (response.data is Map<String, dynamic>) {
       return ApiResponse.fromJson(response.data);

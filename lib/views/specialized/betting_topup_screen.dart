@@ -160,10 +160,14 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
   Widget build(BuildContext context) {
     final specProvider = Provider.of<SpecializedProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = Theme.of(context).cardColor;
+    final borderCol = isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0);
+    final titleCol = Theme.of(context).colorScheme.onSurface;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Betting Wallet Top Up'),
+        title: const Text('Betting Wallet Top-Up'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -172,26 +176,26 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Betting Platform Dropdown
-              const Text(
+              Text(
                 'Select Betting Platform',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
 
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A2234),
+                  color: cardBg,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF232D42)),
+                  border: Border.all(color: borderCol),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<Map<String, dynamic>>(
                     value: _selectedPlatform,
                     isExpanded: true,
                     menuMaxHeight: 320,
-                    dropdownColor: const Color(0xFF1A2234),
-                    icon: const Icon(Icons.arrow_drop_down_rounded, color: Colors.white),
+                    dropdownColor: cardBg,
+                    icon: Icon(Icons.arrow_drop_down_rounded, color: titleCol),
                     items: _platforms.map((plat) {
                       final color = plat['color'] as Color;
                       return DropdownMenuItem<Map<String, dynamic>>(
@@ -200,7 +204,7 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
                           children: [
                             Icon(Icons.sports_soccer_rounded, color: color, size: 20),
                             const SizedBox(width: 12),
-                            Text(plat['name'] as String, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                            Text(plat['name'] as String, style: TextStyle(color: titleCol, fontSize: 14)),
                           ],
                         ),
                       );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/transaction_model.dart';
+import '../../core/utils/formatters.dart';
 
 class ReceiptModal extends StatelessWidget {
   final TransactionModel transaction;
@@ -33,12 +34,15 @@ class ReceiptModal extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor(transaction.status);
     final primaryColor = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final modalBg = Theme.of(context).cardColor;
+    final titleColor = Theme.of(context).colorScheme.onSurface;
 
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: Color(0xFF151C2C),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: modalBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -49,7 +53,7 @@ class ReceiptModal extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: const Color(0xFF334155),
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -78,15 +82,15 @@ class ReceiptModal extends StatelessWidget {
             'Transaction Receipt',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: titleColor,
                 ),
           ),
           const SizedBox(height: 6),
           Text(
-            '$currencySymbol${transaction.amount.toStringAsFixed(2)}',
+            AppFormatters.formatCurrency(transaction.amount, currencySymbol),
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: titleColor,
                 ),
           ),
           const SizedBox(height: 12),
@@ -110,21 +114,21 @@ class ReceiptModal extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          const Divider(color: Color(0xFF232D42)),
+          Divider(color: isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0)),
           const SizedBox(height: 16),
 
           // Detail rows
-          _buildRow('Description', transaction.description),
-          _buildRow('Service Type', transaction.serviceType.toUpperCase()),
+          _buildRow('Description', transaction.title, context: context),
+          _buildRow('Service Type', transaction.serviceType.toUpperCase(), context: context),
           _buildRow(
             'Reference',
             transaction.reference,
             isCopyable: true,
             context: context,
           ),
-          _buildRow('Date & Time', transaction.date.isNotEmpty ? transaction.date : transaction.humanDate),
-          _buildRow('Balance Before', '$currencySymbol${transaction.balanceBefore.toStringAsFixed(2)}'),
-          _buildRow('Balance After', '$currencySymbol${transaction.balanceAfter.toStringAsFixed(2)}'),
+          _buildRow('Date & Time', transaction.formattedDate, context: context),
+          _buildRow('Balance Before', AppFormatters.formatCurrency(transaction.balanceBefore, currencySymbol), context: context),
+          _buildRow('Balance After', AppFormatters.formatCurrency(transaction.balanceAfter, currencySymbol), context: context),
 
           const SizedBox(height: 24),
 
@@ -144,7 +148,11 @@ class ReceiptModal extends StatelessWidget {
     );
   }
 
-  Widget _buildRow(String label, String value, {bool isCopyable = false, BuildContext? context}) {
+  Widget _buildRow(String label, String value, {bool isCopyable = false, required BuildContext context}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = Theme.of(context).colorScheme.onSurface;
+    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -152,7 +160,7 @@ class ReceiptModal extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+            style: TextStyle(color: subColor, fontSize: 14),
           ),
           const SizedBox(width: 12),
           Flexible(
@@ -162,8 +170,8 @@ class ReceiptModal extends StatelessWidget {
                 Flexible(
                   child: Text(
                     value,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: titleColor,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -171,7 +179,7 @@ class ReceiptModal extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (isCopyable && context != null) ...[
+                if (isCopyable) ...[
                   const SizedBox(width: 6),
                   GestureDetector(
                     onTap: () {
@@ -183,7 +191,7 @@ class ReceiptModal extends StatelessWidget {
                         ),
                       );
                     },
-                    child: const Icon(Icons.copy_rounded, size: 16, color: Color(0xFF94A3B8)),
+                    child: Icon(Icons.copy_rounded, size: 16, color: subColor),
                   ),
                 ],
               ],

@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/specialized_provider.dart';
+import '../../core/utils/formatters.dart';
 import '../widgets/receipt_modal.dart';
 
 class WalletView extends StatefulWidget {
@@ -48,6 +49,12 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
 
     final balance = user?.wallet?.balance ?? 0.0;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = Theme.of(context).cardColor;
+    final borderCol = isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0);
+    final titleCol = Theme.of(context).colorScheme.onSurface;
+    final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Wallet & Funding'),
@@ -56,7 +63,7 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
           controller: _tabController,
           indicatorColor: primaryColor,
           labelColor: primaryColor,
-          unselectedLabelColor: const Color(0xFF94A3B8),
+          unselectedLabelColor: subCol,
           tabs: const [
             Tab(text: 'Virtual Accounts'),
             Tab(text: 'Redeem Coupon'),
@@ -77,9 +84,9 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
+                    color: cardBg,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+                    border: Border.all(color: borderCol),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -87,15 +94,15 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Current Wallet Balance',
-                            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                            style: TextStyle(color: subCol, fontSize: 13),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '$currencySymbol${balance.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            AppFormatters.formatCurrency(balance, currencySymbol),
+                            style: TextStyle(
+                              color: titleCol,
                               fontSize: 26,
                               fontWeight: FontWeight.bold,
                             ),
@@ -115,14 +122,14 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                 ),
                 const SizedBox(height: 24),
 
-                const Text(
+                Text(
                   'Automated Virtual Bank Accounts',
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: titleCol, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Transfer money to any of these assigned accounts to fund your wallet instantly 24/7.',
-                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                  style: TextStyle(color: subCol, fontSize: 13),
                 ),
                 const SizedBox(height: 20),
 
@@ -131,17 +138,18 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                     ? Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1A2234),
+                          color: cardBg,
                           borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: borderCol),
                         ),
                         child: Row(
                           children: [
                             Icon(Icons.info_outline_rounded, color: primaryColor),
                             const SizedBox(width: 12),
-                            const Expanded(
+                            Expanded(
                               child: Text(
                                 'Virtual bank account details will appear here once generated for your profile.',
-                                style: TextStyle(color: Colors.white70, fontSize: 13),
+                                style: TextStyle(color: subCol, fontSize: 13),
                               ),
                             ),
                           ],
@@ -157,9 +165,9 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                           return Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1A2234),
+                              color: cardBg,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFF232D42)),
+                              border: Border.all(color: borderCol),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -169,10 +177,10 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                                   children: [
                                     Text(
                                       dva.bankName,
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
+                                      style: TextStyle(
+                                        color: titleCol,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
@@ -284,10 +292,10 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: dashboardProvider.recentTransactions.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'No transaction history found.',
-                      style: TextStyle(color: Color(0xFF94A3B8)),
+                      style: TextStyle(color: subCol),
                     ),
                   )
                 : ListView.separated(
@@ -307,9 +315,9 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
-                          side: const BorderSide(color: Color(0xFF232D42)),
+                          side: BorderSide(color: borderCol),
                         ),
-                        tileColor: const Color(0xFF1A2234),
+                        tileColor: cardBg,
                         leading: CircleAvatar(
                           backgroundColor: isDebit
                               ? const Color(0xFFEF4444).withValues(alpha: 0.15)
@@ -320,19 +328,19 @@ class _WalletViewState extends State<WalletView> with SingleTickerProviderStateM
                           ),
                         ),
                         title: Text(
-                          tx.description,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                          tx.title,
+                          style: TextStyle(color: titleCol, fontWeight: FontWeight.bold, fontSize: 14),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         subtitle: Text(
-                          tx.date.isNotEmpty ? tx.date : tx.humanDate,
-                          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                          tx.formattedDate,
+                          style: TextStyle(color: subCol, fontSize: 12),
                         ),
                         trailing: Text(
-                          '${isDebit ? '-' : '+'}$currencySymbol${tx.amount.toStringAsFixed(2)}',
+                          '${isDebit ? '-' : '+'}${AppFormatters.formatCurrency(tx.amount, currencySymbol)}',
                           style: TextStyle(
-                            color: isDebit ? Colors.white : const Color(0xFF10B981),
+                            color: isDebit ? titleCol : const Color(0xFF10B981),
                             fontWeight: FontWeight.bold,
                           ),
                         ),

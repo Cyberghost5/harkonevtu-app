@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/vtu_provider.dart';
+import '../../core/utils/formatters.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
 import '../../providers/dashboard_provider.dart';
@@ -137,10 +138,15 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
   Widget build(BuildContext context) {
     final vtuProvider = Provider.of<VtuProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = Theme.of(context).cardColor;
+    final borderCol = isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0);
+    final titleCol = Theme.of(context).colorScheme.onSurface;
+    final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Airtime Top Up'),
+        title: const Text('Airtime Top-Up'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -148,11 +154,11 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Select Mobile Network',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
 
               // Network Selector Cards Row
               Row(
@@ -173,10 +179,10 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? netColor.withValues(alpha: 0.2)
-                              : const Color(0xFF1A2234),
+                              : cardBg,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isSelected ? netColor : const Color(0xFF232D42),
+                            color: isSelected ? netColor : borderCol,
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -194,7 +200,7 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
                             Text(
                               net['name'] as String,
                               style: TextStyle(
-                                color: isSelected ? Colors.white : const Color(0xFF94A3B8),
+                                color: isSelected ? netColor : subCol,
                                 fontSize: 12,
                                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                               ),
@@ -209,19 +215,19 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
               const SizedBox(height: 24),
 
               // Phone Number Input
-              const Text(
+              Text(
                 'Phone Number',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(color: titleCol, fontWeight: FontWeight.bold),
                 onChanged: _onPhoneChanged,
                 decoration: InputDecoration(
                   hintText: 'e.g. 08012345678',
-                  prefixIcon: const Icon(Icons.phone_android_rounded, color: Color(0xFF94A3B8)),
+                  prefixIcon: Icon(Icons.phone_android_rounded, color: subCol),
                   suffixIcon: vtuProvider.detectedNetwork != null
                       ? Padding(
                           padding: const EdgeInsets.all(12),
@@ -243,9 +249,9 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
               const SizedBox(height: 24),
 
               // Amount Chips & Custom Input
-              const Text(
+              Text(
                 'Amount',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
 
@@ -257,16 +263,16 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
                   final isSelected = _amountController.text == amtStr;
 
                   return ChoiceChip(
-                    label: Text('₦$amtStr'),
+                    label: Text('₦${AppFormatters.formatInteger(amt)}'),
                     selected: isSelected,
                     selectedColor: primaryColor,
-                    backgroundColor: const Color(0xFF1A2234),
+                    backgroundColor: cardBg,
                     labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : const Color(0xFF94A3B8),
+                      color: isSelected ? Colors.white : subCol,
                       fontWeight: FontWeight.bold,
                     ),
                     side: BorderSide(
-                      color: isSelected ? primaryColor : const Color(0xFF232D42),
+                      color: isSelected ? primaryColor : borderCol,
                     ),
                     onSelected: (selected) {
                       if (selected) {
@@ -283,7 +289,6 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
                 decoration: const InputDecoration(
                   hintText: 'Or enter custom amount (₦)',
                   prefixIcon: Icon(Icons.payments_outlined, color: Color(0xFF94A3B8)),

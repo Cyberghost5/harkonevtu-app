@@ -7,7 +7,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../core/utils/formatters.dart';
 import '../widgets/receipt_modal.dart';
+import '../widgets/glass_card.dart';
 import '../vtu/airtime_topup_screen.dart';
 import '../vtu/data_bundles_screen.dart';
 import '../bills/electricity_bills_screen.dart';
@@ -16,6 +18,7 @@ import '../bills/exam_pins_screen.dart';
 import '../specialized/betting_topup_screen.dart';
 import '../specialized/airtime_to_cash_screen.dart';
 import '../specialized/voucher_printing_screen.dart';
+import '../profile/referrals_screen.dart';
 import '../wallet/wallet_view.dart';
 
 class HomeDashboardView extends StatefulWidget {
@@ -28,6 +31,8 @@ class HomeDashboardView extends StatefulWidget {
 }
 
 class _HomeDashboardViewState extends State<HomeDashboardView> {
+  int _currentDvaIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -61,7 +66,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
         (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://'));
 
     final balance = user?.wallet?.balance ?? 0.0;
-    final formattedBalance = '$currencySymbol${balance.toStringAsFixed(2)}';
+    final formattedBalance = AppFormatters.formatCurrency(balance, currencySymbol);
 
     return Scaffold(
       body: SafeArea(
@@ -76,46 +81,57 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Header Bar - Tapping user info navigates to Profile Tab (index 3)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () => widget.onTabSwitch(3),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor: primaryColor.withValues(alpha: 0.2),
-                            backgroundImage: hasAvatar ? CachedNetworkImageProvider(avatarUrl) : null,
-                            child: !hasAvatar ? Icon(Icons.person_rounded, color: primaryColor) : null,
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Hello, $displayName 👋',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                // Top Glassmorphic Header Bar
+                GlassContainer(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      GestureDetector(
+                        onTap: () => widget.onTabSwitch(3),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundColor: primaryColor.withValues(alpha: 0.2),
+                              backgroundImage: hasAvatar ? CachedNetworkImageProvider(avatarUrl) : null,
+                              child: !hasAvatar ? Icon(Icons.person_rounded, color: primaryColor) : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Hello, $displayName 👋',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                rawUsername.isNotEmpty ? '@$rawUsername' : 'Tap to view profile',
-                                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ],
+                                Text(
+                                  rawUsername.isNotEmpty ? '@$rawUsername' : 'Tap to view profile',
+                                  style: TextStyle(
+                                    color: Theme.of(context).brightness == Brightness.dark
+                                        ? const Color(0xFF94A3B8)
+                                        : const Color(0xFF64748B),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
-                      onPressed: () {},
-                    ),
-                  ],
+                      IconButton(
+                        icon: Icon(
+                          Icons.notifications_none_rounded,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
 
@@ -292,20 +308,26 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
 
     if (dashboardProvider.isLoadingDva) {
       return Container(
-        height: 72,
+        height: 80,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Center(child: SpinKitThreeBounce(color: primaryColor, size: 18)),
       );
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = Theme.of(context).cardColor;
+    final borderCol = isDark ? const Color(0xFF2B364E) : const Color(0xFFE2E8F0);
+    final titleCol = Theme.of(context).colorScheme.onSurface;
+    final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     if (dvaList.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF192234),
+          color: cardBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
         ),
@@ -320,18 +342,18 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
               child: Icon(Icons.account_balance_wallet_outlined, color: primaryColor, size: 24),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'No Virtual Account Generated',
-                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: titleCol, fontSize: 13, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
                     'Generate a dedicated bank account for 1-tap instant wallet funding',
-                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                    style: TextStyle(color: subCol, fontSize: 11),
                   ),
                 ],
               ),
@@ -350,76 +372,136 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
       );
     }
 
-    final dva = dvaList.first;
-    final bankName = dva.bankName;
-    final accountNo = dva.accountNumber;
-    final accountName = dva.accountName;
+    return Column(
+      children: [
+        SizedBox(
+          height: 84,
+          child: PageView.builder(
+            itemCount: dvaList.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentDvaIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              final dva = dvaList[index];
+              final bankName = dva.bankName;
+              final accountNo = dva.accountNumber;
+              final accountName = dva.accountName;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF192234),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2B364E)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
+              return Container(
+                margin: dvaList.length > 1 ? const EdgeInsets.symmetric(horizontal: 2) : EdgeInsets.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: borderCol),
                 ),
-                child: Icon(Icons.account_balance_rounded, color: primaryColor, size: 22),
-              ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    bankName,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(Icons.account_balance_rounded, color: primaryColor, size: 22),
+                        ),
+                        const SizedBox(width: 14),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  bankName,
+                                  style: TextStyle(
+                                    color: subCol,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                if (dvaList.length > 1) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: primaryColor.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      '${index + 1}/${dvaList.length}',
+                                      style: TextStyle(
+                                        color: primaryColor,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              accountNo,
+                              style: TextStyle(
+                                color: titleCol,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            Text(
+                              accountName,
+                              style: TextStyle(color: subCol, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    accountNo,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
+                    IconButton(
+                      icon: Icon(Icons.copy_rounded, color: subCol, size: 20),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: accountNo));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('$bankName account number copied!'),
+                            backgroundColor: primaryColor,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                  Text(
-                    accountName,
-                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.copy_rounded, color: Color(0xFF94A3B8), size: 20),
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: accountNo));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$bankName account number copied!'),
-                  duration: const Duration(seconds: 2),
-                  backgroundColor: primaryColor,
+                  ],
                 ),
               );
             },
           ),
+        ),
+        if (dvaList.length > 1) ...[
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              dvaList.length,
+              (index) => AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: _currentDvaIndex == index ? 18 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: _currentDvaIndex == index ? primaryColor : subCol.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
+          ),
         ],
-      ),
+      ],
     );
   }
 
@@ -576,12 +658,13 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     if (services?.betting ?? true) {
       actions.add({'key': 'betting', 'title': 'Betting', 'icon': Icons.sports_soccer_rounded, 'color': const Color(0xFF06B6D4)});
     }
-    if (services?.airtimeToCash ?? true) {
-      actions.add({'key': 'airtimeToCash', 'title': 'Airtime to Cash', 'icon': Icons.currency_exchange_rounded, 'color': const Color(0xFF84CC16)});
-    }
     if (services?.rechargeCardPrinting ?? true) {
       actions.add({'key': 'rechargeCardPrinting', 'title': 'Airtime PINs', 'icon': Icons.print_rounded, 'color': const Color(0xFF6366F1)});
     }
+    if (services?.airtimeToCash ?? true) {
+      actions.add({'key': 'airtimeToCash', 'title': 'Airtime to Cash', 'icon': Icons.currency_exchange_rounded, 'color': const Color(0xFF84CC16)});
+    }
+    actions.add({'key': 'referrals', 'title': 'Refer & Earn', 'icon': Icons.card_giftcard_rounded, 'color': const Color(0xFFEAB308)});
 
     return GridView.builder(
       shrinkWrap: true,
@@ -626,40 +709,51 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
               case 'rechargeCardPrinting':
                 targetScreen = const VoucherPrintingScreen();
                 break;
+              case 'referrals':
+                targetScreen = const ReferralsScreen();
+                break;
               default:
                 widget.onTabSwitch(1);
                 return;
             }
             Navigator.push(context, MaterialPageRoute(builder: (_) => targetScreen));
           },
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: itemColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: itemColor.withValues(alpha: 0.3),
-                    width: 1,
+          child: GlassContainer(
+            borderRadius: 18,
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+            borderColor: itemColor.withValues(alpha: 0.3),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: itemColor.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: itemColor.withValues(alpha: 0.25),
+                        blurRadius: 10,
+                        spreadRadius: 0,
+                      ),
+                    ],
                   ),
+                  child: Icon(item['icon'] as IconData, color: itemColor, size: 24),
                 ),
-                child: Icon(item['icon'] as IconData, color: itemColor, size: 26),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                item['title'] as String,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(height: 6),
+                Text(
+                  item['title'] as String,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -680,23 +774,28 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     }
 
     final list = dashboardProvider.recentTransactions;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = Theme.of(context).cardColor;
+    final borderCol = isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0);
+    final titleCol = Theme.of(context).colorScheme.onSurface;
+    final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     if (list.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A2234),
+          color: cardBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF232D42)),
+          border: Border.all(color: borderCol),
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             children: [
-              Icon(Icons.history_rounded, size: 40, color: Color(0xFF64748B)),
-              SizedBox(height: 8),
+              const Icon(Icons.history_rounded, size: 40, color: Color(0xFF64748B)),
+              const SizedBox(height: 8),
               Text(
                 'No transactions yet.',
-                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                style: TextStyle(color: subCol, fontSize: 14),
               ),
             ],
           ),
@@ -722,13 +821,9 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
               builder: (_) => ReceiptModal(transaction: tx, currencySymbol: currencySymbol),
             );
           },
-          child: Container(
+          child: GlassContainer(
+            borderRadius: 16,
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A2234),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF232D42)),
-            ),
             child: Row(
               children: [
                 Container(
@@ -751,9 +846,9 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        tx.description,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        tx.title.isNotEmpty ? tx.title : tx.description,
+                        style: TextStyle(
+                          color: titleCol,
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -762,8 +857,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        tx.humanDate.isNotEmpty ? tx.humanDate : tx.date,
-                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                        tx.formattedDate,
+                        style: TextStyle(color: subCol, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -773,9 +870,9 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '${isDebit ? '-' : '+'}$currencySymbol${tx.amount.toStringAsFixed(2)}',
+                      '${isDebit ? '-' : '+'}${AppFormatters.formatCurrency(tx.amount, currencySymbol)}',
                       style: TextStyle(
-                        color: isDebit ? Colors.white : const Color(0xFF10B981),
+                        color: isDebit ? (isDark ? Colors.white : const Color(0xFF0F172A)) : const Color(0xFF10B981),
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),

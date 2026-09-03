@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/vtu_provider.dart';
+import '../../core/utils/formatters.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
 import '../../providers/dashboard_provider.dart';
@@ -164,6 +165,12 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
       return plan.dataType.toLowerCase().contains(_selectedTypeFilter);
     }).toList();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = Theme.of(context).cardColor;
+    final borderCol = isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0);
+    final titleCol = Theme.of(context).colorScheme.onSurface;
+    final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Buy Data Bundles'),
@@ -174,7 +181,12 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Network Tabs
+              // Select Network
+              Text(
+                'Select Mobile Network',
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
               Row(
                 children: _networks.map((net) {
                   final isSelected = _selectedNetwork == net['key'];
@@ -185,56 +197,68 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
                       onTap: () {
                         setState(() {
                           _selectedNetwork = net['key'] as String;
+                          _selectedPlan = null;
                         });
-                        _loadDataPlans();
+                        vtuProvider.fetchDataPlans(net['key'] as String);
                       },
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 4),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
                           color: isSelected
                               ? netColor.withValues(alpha: 0.2)
-                              : const Color(0xFF1A2234),
+                              : cardBg,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isSelected ? netColor : const Color(0xFF232D42),
+                            color: isSelected ? netColor : borderCol,
                             width: isSelected ? 2 : 1,
                           ),
                         ),
-                        child: Center(
-                          child: Text(
-                            net['name'] as String,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFF94A3B8),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: netColor.withValues(alpha: 0.3),
+                              child: Text(
+                                (net['name'] as String)[0],
+                                style: TextStyle(color: netColor, fontWeight: FontWeight.bold),
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 6),
+                            Text(
+                              net['name'] as String,
+                              style: TextStyle(
+                                color: isSelected ? netColor : subCol,
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // Phone Number Input
-              const Text(
+              Text(
                 'Recipient Phone Number',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(color: titleCol, fontWeight: FontWeight.bold),
                 onChanged: _onPhoneChanged,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'e.g. 08012345678',
-                  prefixIcon: Icon(Icons.phone_android_rounded, color: Color(0xFF94A3B8)),
+                  prefixIcon: Icon(Icons.phone_android_rounded, color: subCol),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // Data Type Filter Chips
               SingleChildScrollView(
@@ -297,11 +321,16 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
                             ),
                           ),
                         )
-                      : ListView.separated(
+                      : GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: 0.95,
+                          ),
                           itemCount: filteredPlans.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final plan = filteredPlans[index];
                             final isSelected = _selectedPlan?.id == plan.id;
@@ -313,64 +342,61 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
                                 });
                               },
                               child: Container(
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? primaryColor.withValues(alpha: 0.15)
-                                      : const Color(0xFF1A2234),
-                                  borderRadius: BorderRadius.circular(16),
+                                      ? primaryColor.withValues(alpha: 0.18)
+                                      : cardBg,
+                                  borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                    color: isSelected ? primaryColor : const Color(0xFF232D42),
+                                    color: isSelected ? primaryColor : borderCol,
                                     width: isSelected ? 2 : 1,
                                   ),
                                 ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Text(
-                                              plan.planName,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: primaryColor.withValues(alpha: 0.2),
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: Text(
-                                                plan.typeLabel,
-                                                style: TextStyle(
-                                                  color: primaryColor,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 10,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Validity: ${plan.validity}',
-                                          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
-                                        ),
-                                      ],
-                                    ),
                                     Text(
-                                      '$currencySymbol${plan.price.toStringAsFixed(2)}',
+                                      plan.planName,
                                       style: TextStyle(
-                                        color: isSelected ? primaryColor : Colors.white,
+                                        color: isSelected ? primaryColor : titleCol,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 16,
+                                        fontSize: 13,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      AppFormatters.formatCurrency(plan.price, currencySymbol),
+                                      style: TextStyle(
+                                        color: isSelected ? primaryColor : titleCol,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: isSelected ? primaryColor : primaryColor.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        plan.validity.isNotEmpty ? plan.validity : plan.typeLabel,
+                                        style: TextStyle(
+                                          color: isSelected ? Colors.white : primaryColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 9,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],

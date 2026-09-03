@@ -71,19 +71,49 @@ class UserModel {
     this.wallet,
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
+  factory UserModel.fromJson(Map<String, dynamic> rawJson) {
+    Map<String, dynamic> json = rawJson;
+    if (rawJson.containsKey('user') && rawJson['user'] is Map<String, dynamic>) {
+      json = rawJson['user'] as Map<String, dynamic>;
+    } else if (rawJson.containsKey('data') && rawJson['data'] is Map<String, dynamic>) {
+      json = rawJson['data'] as Map<String, dynamic>;
+    }
+
+    String resolveName(Map<String, dynamic> data) {
+      if (data['name'] != null && data['name'].toString().trim().isNotEmpty) {
+        return data['name'].toString().trim();
+      }
+      if (data['full_name'] != null && data['full_name'].toString().trim().isNotEmpty) {
+        return data['full_name'].toString().trim();
+      }
+      if (data['fullname'] != null && data['fullname'].toString().trim().isNotEmpty) {
+        return data['fullname'].toString().trim();
+      }
+      final firstName = data['first_name']?.toString().trim() ?? '';
+      final lastName = data['last_name']?.toString().trim() ?? '';
+      if (firstName.isNotEmpty || lastName.isNotEmpty) {
+        return '$firstName $lastName'.trim();
+      }
+      if (data['username'] != null && data['username'].toString().trim().isNotEmpty) {
+        return data['username'].toString().trim();
+      }
+      return '';
+    }
+
     return UserModel(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? json['full_name'] ?? json['username'] ?? '',
-      username: json['username'] ?? '',
-      email: json['email'] ?? '',
-      phone: json['phone'] ?? '',
-      userType: json['user_type'] ?? 'user',
-      isActive: json['is_active'] ?? true,
-      referralCode: json['referral_code'],
-      kycStatus: json['kyc_status'],
-      avatar: json['avatar'] ?? json['profile_photo_url'] ?? json['avatar_url'] ?? json['profile_picture'],
-      wallet: json['wallet'] != null ? WalletModel.fromJson(json['wallet']) : null,
+      id: json['id'] is num ? (json['id'] as num).toInt() : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      name: resolveName(json),
+      username: json['username']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      phone: json['phone']?.toString() ?? json['phone_number']?.toString() ?? json['mobile']?.toString() ?? '',
+      userType: json['user_type']?.toString() ?? json['role']?.toString() ?? 'user',
+      isActive: json['is_active'] == true || json['status'] == 'active' || json['status'] == 1 || json['is_active'] == 1,
+      referralCode: json['referral_code']?.toString() ?? json['ref_code']?.toString(),
+      kycStatus: json['kyc_status']?.toString(),
+      avatar: json['avatar']?.toString() ?? json['profile_photo_url']?.toString() ?? json['avatar_url']?.toString() ?? json['profile_picture']?.toString(),
+      wallet: json['wallet'] != null && json['wallet'] is Map<String, dynamic>
+          ? WalletModel.fromJson(json['wallet'] as Map<String, dynamic>)
+          : null,
     );
   }
 

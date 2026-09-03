@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import '../core/api/api_client.dart';
+import '../core/services/notification_service.dart';
 import '../core/storage/secure_storage_service.dart';
 import '../models/user_model.dart';
 
@@ -286,14 +287,49 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> fetchProfile() async {
     try {
-      final response = await _apiClient.get('/auth/me');
-      if (response.status && response.data != null) {
-        final userData = response.data as Map<String, dynamic>;
-        _user = UserModel.fromJson(userData);
-        await _storage.saveUserData(_user!.toJson());
-        notifyListeners();
+      var response = await _apiClient.get('/auth/me');
+      if (!response.status || response.data == null) {
+        response = await _apiClient.get('/user/profile');
       }
-    } catch (_) {}
+      if (response.status && response.data != null) {
+        if (response.data is Map<String, dynamic>) {
+          final rawData = response.data as Map<String, dynamic>;
+          _user = UserModel.fromJson(rawData);
+          await _storage.saveUserData(_user!.toJson());
+          NotificationService().syncDeviceToken(_apiClient);
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching user profile: $e');
+    }
+  }
+
+  Future<ApiResponse> deleteAccount({required String password}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      var response = await _apiClient.delete('/user/account', data: {'password': password});
+      if (!response.status) {
+        response = await _apiClient.post('/user/account/delete', data: {'password': password});
+      }
+      if (!response.status) {
+        response = await _apiClient.post('/auth/delete-account', data: {'password': password});
+      }
+
+      if (response.status) {
+        await logout();
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return response;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return ApiResponse(status: false, message: 'Failed to delete account. Please try again.');
+    }
   }
 
   Future<void> logout() async {

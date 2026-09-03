@@ -248,10 +248,10 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? netColor.withValues(alpha: 0.2)
-                              : const Color(0xFF1A2234),
+                              : Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isSelected ? netColor : const Color(0xFF232D42),
+                            color: isSelected ? netColor : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0)),
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -259,7 +259,7 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
                           child: Text(
                             net['name'] as String,
                             style: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFF94A3B8),
+                              color: isSelected ? netColor : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'page_transitions.dart';
 
 class DynamicTheme {
   static Color hexToColor(String hexString, {Color fallback = const Color(0xFF45BAE6)}) {
@@ -13,6 +14,16 @@ class DynamicTheme {
     }
   }
 
+  static const _smoothTransitions = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: SmoothPageTransitionsBuilder(),
+      TargetPlatform.iOS: SmoothPageTransitionsBuilder(),
+      TargetPlatform.macOS: SmoothPageTransitionsBuilder(),
+      TargetPlatform.windows: SmoothPageTransitionsBuilder(),
+      TargetPlatform.linux: SmoothPageTransitionsBuilder(),
+    },
+  );
+
   static ThemeData buildDarkTheme(String hexColor) {
     final primaryColor = hexToColor(hexColor);
 
@@ -24,6 +35,7 @@ class DynamicTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      pageTransitionsTheme: _smoothTransitions,
       scaffoldBackgroundColor: backgroundColor,
       primaryColor: primaryColor,
       colorScheme: ColorScheme.dark(
@@ -113,6 +125,7 @@ class DynamicTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      pageTransitionsTheme: _smoothTransitions,
       scaffoldBackgroundColor: backgroundColor,
       primaryColor: primaryColor,
       colorScheme: ColorScheme.light(

@@ -8,15 +8,21 @@ class DashboardProvider extends ChangeNotifier {
 
   List<TransactionModel> _recentTransactions = [];
   List<DvaAccountModel> _dvaAccounts = [];
+  Map<String, dynamic>? _referralSummary;
+  List<dynamic> _referralHistory = [];
   bool _isLoadingTransactions = false;
   bool _isLoadingDva = false;
+  bool _isLoadingReferrals = false;
   bool _hideBalance = false;
   String? _errorMessage;
 
   List<TransactionModel> get recentTransactions => _recentTransactions;
   List<DvaAccountModel> get dvaAccounts => _dvaAccounts;
+  Map<String, dynamic>? get referralSummary => _referralSummary;
+  List<dynamic> get referralHistory => _referralHistory;
   bool get isLoadingTransactions => _isLoadingTransactions;
   bool get isLoadingDva => _isLoadingDva;
+  bool get isLoadingReferrals => _isLoadingReferrals;
   bool get hideBalance => _hideBalance;
   String? get errorMessage => _errorMessage;
 
@@ -97,6 +103,56 @@ class DashboardProvider extends ChangeNotifier {
       _isLoadingDva = false;
       notifyListeners();
       return ApiResponse(status: false, message: 'Failed to generate Virtual Bank Account.');
+    }
+  }
+
+  Future<void> fetchReferralSummary() async {
+    _isLoadingReferrals = true;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.get('/referrals/summary');
+      if (response.status && response.data != null) {
+        if (response.data is Map<String, dynamic>) {
+          _referralSummary = response.data as Map<String, dynamic>;
+        }
+      }
+    } catch (_) {
+    } finally {
+      _isLoadingReferrals = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchReferralHistory() async {
+    try {
+      final response = await _apiClient.get('/referrals/history');
+      if (response.status && response.data != null) {
+        if (response.data is Map<String, dynamic>) {
+          final map = response.data as Map<String, dynamic>;
+          final list = map['data'] ?? map['history'] ?? map['referrals'];
+          if (list is List) {
+            _referralHistory = list;
+            notifyListeners();
+          }
+        } else if (response.data is List) {
+          _referralHistory = response.data as List;
+          notifyListeners();
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<ApiResponse> withdrawReferralEarnings() async {
+    try {
+      final response = await _apiClient.post('/referrals/withdraw');
+      if (response.status) {
+        await fetchReferralSummary();
+        await fetchDashboardData();
+      }
+      return response;
+    } catch (e) {
+      return ApiResponse(status: false, message: 'Failed to withdraw referral earnings.');
     }
   }
 }

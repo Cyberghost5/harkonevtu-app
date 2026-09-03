@@ -1,3 +1,5 @@
+import '../core/utils/formatters.dart';
+
 class DataPlanModel {
   final int id;
   final String planName;
@@ -19,6 +21,8 @@ class DataPlanModel {
     required this.regularPrice,
   });
 
+  String get formattedPrice => AppFormatters.formatAmount(price);
+
   factory DataPlanModel.fromJson(Map<String, dynamic> json) {
     double parseDouble(dynamic val) {
       if (val == null) return 0.0;
@@ -28,7 +32,7 @@ class DataPlanModel {
 
     return DataPlanModel(
       id: json['id'] ?? 0,
-      planName: json['plan_name'] ?? '',
+      planName: json['plan_name'] ?? json['name'] ?? '',
       networkKey: json['network_key'] ?? 'mtn',
       dataType: json['data_type'] ?? 'sme',
       typeLabel: json['type_label'] ?? 'SME',

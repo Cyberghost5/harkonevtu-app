@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/bills_provider.dart';
+import '../../core/utils/formatters.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
 import '../../providers/dashboard_provider.dart';
@@ -230,9 +231,15 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
     final selectedExam = _examTypes[_selectedExamIndex];
     final totalPrice = (selectedExam['price'] as double) * _quantity;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = Theme.of(context).cardColor;
+    final borderCol = isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0);
+    final titleCol = Theme.of(context).colorScheme.onSurface;
+    final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Exam PIN Scratch Cards'),
+        title: const Text('Exam Result PINs'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -240,11 +247,11 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Select Examination Body',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
 
               // Exam Type Cards
               Column(
@@ -265,10 +272,10 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? examColor.withValues(alpha: 0.15)
-                            : const Color(0xFF1A2234),
+                            : cardBg,
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: isSelected ? examColor : const Color(0xFF232D42),
+                          color: isSelected ? examColor : borderCol,
                           width: isSelected ? 2 : 1,
                         ),
                       ),
@@ -289,16 +296,16 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
                               children: [
                                 Text(
                                   exam['name'] as String,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: titleCol,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Price per card: $currencySymbol${(exam['price'] as double).toStringAsFixed(2)}',
-                                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                                  'Price per card: ${AppFormatters.formatCurrency(exam['price'] as double, currencySymbol)}',
+                                  style: TextStyle(color: subCol, fontSize: 12),
                                 ),
                               ],
                             ),
@@ -308,8 +315,7 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: isSelected ? examColor : const Color(0xFF64748B),
-                                width: 2,
+                                color: isSelected ? examColor : subCol,
                               ),
                             ),
                             child: Icon(

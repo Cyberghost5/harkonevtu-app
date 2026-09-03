@@ -9,6 +9,7 @@ import '../bills/exam_pins_screen.dart';
 import '../specialized/betting_topup_screen.dart';
 import '../specialized/airtime_to_cash_screen.dart';
 import '../specialized/voucher_printing_screen.dart';
+import '../widgets/glass_card.dart';
 
 class ServicesGridView extends StatelessWidget {
   const ServicesGridView({super.key});
@@ -68,20 +69,20 @@ class ServicesGridView extends StatelessWidget {
         'enabled': services?.betting ?? true,
       },
       {
-        'key': 'airtime_to_cash',
-        'title': 'Airtime to Cash',
-        'desc': 'Convert excess phone airtime to bank money',
-        'icon': Icons.currency_exchange_rounded,
-        'color': const Color(0xFF84CC16),
-        'enabled': services?.airtimeToCash ?? true,
-      },
-      {
         'key': 'recharge_card_printing',
         'title': 'Airtime PINs & Vouchers',
         'desc': 'Generate physical paper pins & serial vouchers',
         'icon': Icons.print_rounded,
         'color': const Color(0xFF6366F1),
         'enabled': services?.rechargeCardPrinting ?? true,
+      },
+      {
+        'key': 'airtime_to_cash',
+        'title': 'Airtime to Cash',
+        'desc': 'Convert excess phone airtime to bank money',
+        'icon': Icons.currency_exchange_rounded,
+        'color': const Color(0xFF84CC16),
+        'enabled': services?.airtimeToCash ?? true,
       },
     ];
 
@@ -121,6 +122,10 @@ class ServicesGridView extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final service = activeServices[index];
                   final serviceColor = service['color'] as Color;
+
+                  final isDark = Theme.of(context).brightness == Brightness.dark;
+                  final titleCol = Theme.of(context).colorScheme.onSurface;
+                  final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
                   return GestureDetector(
                     onTap: () {
@@ -167,13 +172,10 @@ class ServicesGridView extends StatelessWidget {
                         );
                       }
                     },
-                    child: Container(
+                    child: GlassContainer(
+                      borderRadius: 18,
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1A2234),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: const Color(0xFF232D42)),
-                      ),
+                      borderColor: serviceColor.withValues(alpha: 0.3),
                       child: Row(
                         children: [
                           Container(
@@ -191,8 +193,8 @@ class ServicesGridView extends StatelessWidget {
                               children: [
                                 Text(
                                   service['title'] as String,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: titleCol,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
                                   ),
@@ -200,8 +202,8 @@ class ServicesGridView extends StatelessWidget {
                                 const SizedBox(height: 4),
                                 Text(
                                   service['desc'] as String,
-                                  style: const TextStyle(
-                                    color: Color(0xFF94A3B8),
+                                  style: TextStyle(
+                                    color: subCol,
                                     fontSize: 12,
                                   ),
                                 ),
