@@ -5,6 +5,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
+import '../../core/storage/secure_storage_service.dart';
 import '../auth/login_screen.dart';
 import 'referrals_screen.dart';
 
@@ -215,6 +216,7 @@ class _ProfileViewState extends State<ProfileView> {
                       _showSnackBar('Transaction PINs do not match.', isError: true);
                       return;
                     }
+                    SecureStorageService().savePin(pinController.text.trim());
                     Navigator.pop(ctx);
                     _showSnackBar('Transaction PIN updated successfully!');
                   },

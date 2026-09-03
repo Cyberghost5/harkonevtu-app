@@ -121,6 +121,9 @@ class SecureStorageService {
   Future<void> clearSession() async {
     await deleteToken();
     await deleteUserData();
+    await _storage.delete(key: _keyPin);
+    await _storage.delete(key: _keyBioLogin);
+    await setBiometricsEnabled(false);
   }
 
   Future<void> clearAll() async {
