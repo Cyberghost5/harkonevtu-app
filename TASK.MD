@@ -148,6 +148,14 @@ We will build this mobile application strictly step-by-step in **6 Sequential Mi
 
 ---
 
+### 🔔 MILESTONE 7: Push Notifications & Background System Alerts (FCM / Local Notifications)
+**Goal:** Integrate system-level push notifications and background tray alerts for real-time transaction updates, wallet funding alerts, and admin announcements.
+1. Integrate `firebase_messaging` / `flutter_local_notifications` packages.
+2. Register FCM device token on login (`POST /api/v1/user/device-token`).
+3. Handle foreground notifications, background message handlers, and interactive system notification clicks.
+
+---
+
 ## 📁 ATTACHMENTS & REFERENCE DOCUMENTS
 - **Postman Collection File:** Attach `hoppscotch-team-collections-openapi.json`.
 - **Interactive Documentation URL:** `https://nmilleniumresource.com.ng/api/docs`
