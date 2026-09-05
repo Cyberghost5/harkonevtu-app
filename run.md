@@ -73,7 +73,7 @@ cd harkonevtu-app
 
 ### Step 2: Fetch & Switch to the Brand Branch on VPS
 
-To build for a specific brand (e.g. `acme_vtu`):
+To build for a specific brand (e.g. `tincitybill`):
 
 ```bash
 # 1. Fetch latest branches from GitHub
@@ -96,7 +96,7 @@ flutter pub get
 Run the build CLI command on your VPS:
 
 ```bash
-dart run tool/build_brand.dart acme_vtu --build
+dart run tool/build_brand.dart tincitybill --build
 ```
 
 ---
@@ -106,10 +106,10 @@ dart run tool/build_brand.dart acme_vtu --build
 Upon successful compilation, both signed binaries will be placed in:
 
 * **Release APK (Direct Install / Testing):**
-  `dist/acme_vtu/app-release.apk`
+  `dist/tincitybill/app-release.apk`
 
 * **Android App Bundle (.aab for Google Play Store):**
-  `dist/acme_vtu/app-release.aab`
+  `dist/tincitybill/app-release.aab`
 
 ---
 
