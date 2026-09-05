@@ -1,0 +1,10 @@
+{
+  "brand_id": "dakeventures",
+  "app_name": "DakeVentures",
+  "package_name": "com.harkonedesigns.dakeventures",
+  "base_url": "https://dakeventures.com.ng/api/v1",
+  "git_branch": "brand/dakeventures",
+  "key_alias": "dakeventures",
+  "store_password": "dakeventures",
+  "key_password": "dakeventures"
+}
