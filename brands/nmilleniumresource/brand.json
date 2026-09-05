@@ -1,0 +1,10 @@
+{
+  "brand_id": "nmilleniumresource",
+  "app_name": "NMillenium",
+  "package_name": "com.harkonedesigns.nmilleniumresource",
+  "base_url": "https://nmilleniumresource.com.ng/api/v1",
+  "git_branch": "brand/nmilleniumresource",
+  "key_alias": "nmilleniumresource",
+  "store_password": "nmilleniumresource",
+  "key_password": "nmilleniumresource"
+}
