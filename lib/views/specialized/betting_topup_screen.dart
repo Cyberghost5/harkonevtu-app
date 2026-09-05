@@ -162,7 +162,7 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
       final msg = response.message.toLowerCase();
       if (msg.contains('pin') || msg.contains('incorrect') || msg.contains('invalid')) {
         Future.delayed(const Duration(milliseconds: 350), () {
-          if (mounted) _submitTopUp();
+          if (mounted) _submitOrder();
         });
       }
     }

@@ -534,20 +534,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-      if (response.status) {
-        await fetchProfile();
-      }
-
-      _isLoading = false;
-      notifyListeners();
-      return response;
-    } catch (e) {
-      _isLoading = false;
-      notifyListeners();
-      return ApiResponse(status: false, message: 'KYC submission failed. Please check your BVN/NIN details.');
-    }
-  }
-
   Future<void> fetchProfile() async {
     try {
       var response = await _apiClient.get('/auth/me');

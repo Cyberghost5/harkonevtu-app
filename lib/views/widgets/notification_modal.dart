@@ -67,7 +67,7 @@ class _NotificationModalState extends State<NotificationModal> {
         final isCredit = tx.type.toLowerCase() == 'credit';
         notifications.add({
           'id': 'tx_${tx.id}',
-          'title': '${tx.type.toUpperCase()}: ${tx.service.toUpperCase()}',
+          'title': '${tx.type.toUpperCase()}: ${tx.serviceType.toUpperCase()}',
           'body': '${tx.description} - ${appConfigProvider.currencySymbol}${tx.amount}',
           'time': tx.formattedDate,
           'icon': isCredit ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
@@ -78,7 +78,9 @@ class _NotificationModalState extends State<NotificationModal> {
     }
 
     return Container(
-      maxHeight: MediaQuery.of(context).size.height * 0.82,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.82,
+      ),
       decoration: BoxDecoration(
         color: cardBgColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),

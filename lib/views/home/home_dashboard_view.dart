@@ -13,6 +13,7 @@ import '../widgets/notification_modal.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
+import '../widgets/clay_text_field.dart';
 import '../vtu/airtime_topup_screen.dart';
 import '../vtu/data_bundles_screen.dart';
 import '../bills/electricity_bills_screen.dart';
@@ -51,6 +52,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     final configProvider = Provider.of<AppConfigProvider>(context);
     final dashboardProvider = Provider.of<DashboardProvider>(context);
 
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final user = authProvider.user;
     final primaryColor = Theme.of(context).primaryColor;
     final currencySymbol = configProvider.currencySymbol;

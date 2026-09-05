@@ -12,11 +12,13 @@ class ClayContainer extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isRecessed;
 
-  const ClayContainer({
+  ClayContainer({
     super.key,
     required this.child,
-    this.borderRadius = 24.0,
-    this.depth = 12.0,
+    double? borderRadius,
+    double? cornerRadius,
+    double? depth,
+    double? spread,
     this.padding,
     this.margin,
     this.color,
@@ -24,7 +26,8 @@ class ClayContainer extends StatelessWidget {
     this.borderWidth = 0.0,
     this.onTap,
     this.isRecessed = false,
-  });
+  })  : borderRadius = cornerRadius ?? borderRadius ?? 24.0,
+        depth = spread ?? depth ?? 12.0;
 
   Color _getHighlightColor(Color baseColor, bool isDark) {
     if (isDark) {

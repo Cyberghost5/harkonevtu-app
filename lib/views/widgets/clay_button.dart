@@ -5,6 +5,7 @@ import 'clay_container.dart';
 
 class ClayButton extends StatefulWidget {
   final String text;
+  final Widget? child;
   final IconData? icon;
   final VoidCallback? onPressed;
   final bool isLoading;
@@ -15,11 +16,13 @@ class ClayButton extends StatefulWidget {
   final double? width;
   final double depth;
 
-  const ClayButton({
+  ClayButton({
     super.key,
-    required this.text,
+    String? text,
+    this.child,
     this.icon,
-    this.onPressed,
+    VoidCallback? onPressed,
+    VoidCallback? onTap,
     this.isLoading = false,
     this.color,
     this.textColor,
@@ -27,7 +30,8 @@ class ClayButton extends StatefulWidget {
     this.height = 54.0,
     this.width,
     this.depth = 10.0,
-  });
+  })  : text = text ?? '',
+        onPressed = onTap ?? onPressed;
 
   @override
   State<ClayButton> createState() => _ClayButtonState();
@@ -91,30 +95,30 @@ class _ClayButtonState extends State<ClayButton> {
                     color: Colors.white,
                     size: 20.0,
                   )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-
-                      if (widget.icon != null) ...[
-                        Icon(
-                          widget.icon,
-                          color: widget.textColor ?? Colors.white,
-                          size: 20,
+                : (widget.child ??
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (widget.icon != null) ...[
+                          Icon(
+                            widget.icon,
+                            color: widget.textColor ?? Colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Text(
+                          widget.text,
+                          style: TextStyle(
+                            color: widget.textColor ?? Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
                         ),
-                        const SizedBox(width: 8),
                       ],
-                      Text(
-                        widget.text,
-                        style: TextStyle(
-                          color: widget.textColor ?? Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
-                  ),
+                    )),
           ),
         ),
       ),

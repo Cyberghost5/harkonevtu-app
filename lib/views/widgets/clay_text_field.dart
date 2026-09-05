@@ -17,13 +17,13 @@ class ClayTextField extends StatelessWidget {
   final VoidCallback? onTap;
   final FocusNode? focusNode;
 
-  const ClayTextField({
+  ClayTextField({
     super.key,
     this.controller,
     this.labelText,
     this.hintText,
-    this.prefixIcon,
-    this.suffixIcon,
+    dynamic prefixIcon,
+    dynamic suffixIcon,
     this.obscureText = false,
     this.keyboardType,
     this.validator,
@@ -33,7 +33,8 @@ class ClayTextField extends StatelessWidget {
     this.readOnly = false,
     this.onTap,
     this.focusNode,
-  });
+  })  : prefixIcon = prefixIcon is IconData ? Icon(prefixIcon, color: const Color(0xFF94A3B8)) : (prefixIcon as Widget?),
+        suffixIcon = suffixIcon is IconData ? Icon(suffixIcon, color: const Color(0xFF94A3B8)) : (suffixIcon as Widget?);
 
   @override
   Widget build(BuildContext context) {
