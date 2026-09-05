@@ -127,9 +127,9 @@ git commit -m "Added new features to core app"
 git push origin main
 
 # 2. Merge main updates into the brand branch
-git checkout brand/acme_vtu
+git checkout brand/tincitybill
 git merge main
-git push origin brand/acme_vtu
+git push origin brand/tincitybill
 ```
 
 ### 2. On VPS (Pull & Rebuild):
