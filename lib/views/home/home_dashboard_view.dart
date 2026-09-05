@@ -521,6 +521,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         bool isSubmitting = false;
+        String? errorMessage;
 
         return StatefulBuilder(
           builder: (context, setModalState) {
@@ -574,6 +575,30 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                       style: TextStyle(color: subColor, fontSize: 13),
                     ),
                     const SizedBox(height: 20),
+                    if (errorMessage != null && errorMessage!.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                errorMessage!,
+                                style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     ClayTextField(
                       controller: bvnController,
                       keyboardType: TextInputType.number,
@@ -590,16 +615,16 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                       onTap: () async {
                         final bvn = bvnController.text.trim();
                         if (bvn.length != 11) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('BVN must be exactly 11 digits.'),
-                              backgroundColor: Color(0xFFEF4444),
-                            ),
-                          );
+                          setModalState(() {
+                            errorMessage = 'BVN must be exactly 11 digits.';
+                          });
                           return;
                         }
 
-                        setModalState(() => isSubmitting = true);
+                        setModalState(() {
+                          isSubmitting = true;
+                          errorMessage = null;
+                        });
                         final response = await dashboardProvider.generateDva(bvn);
 
                         if (!context.mounted) return;
@@ -615,13 +640,12 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                             ),
                           );
                         } else {
-                          setModalState(() => isSubmitting = false);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(response.message),
-                              backgroundColor: const Color(0xFFEF4444),
-                            ),
-                          );
+                          setModalState(() {
+                            isSubmitting = false;
+                            errorMessage = response.message.isNotEmpty
+                                ? response.message
+                                : 'Failed to generate Virtual Bank Account.';
+                          });
                         }
                       },
                       child: const Text('Submit BVN & Generate Account', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),

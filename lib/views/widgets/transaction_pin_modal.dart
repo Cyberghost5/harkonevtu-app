@@ -85,17 +85,20 @@ class _TransactionPinModalState extends State<TransactionPinModal> {
     return _controllers.map((c) => c.text).join();
   }
 
+  String? _errorMessage;
+
   void _handleConfirm() async {
     final pin = _getPin();
     if (pin.length < 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your complete 4-digit Transaction PIN.'),
-          backgroundColor: Color(0xFFEF4444),
-        ),
-      );
+      setState(() {
+        _errorMessage = 'Please enter your complete 4-digit Transaction PIN.';
+      });
       return;
     }
+
+    setState(() {
+      _errorMessage = null;
+    });
 
     // Save PIN to SecureStorage for seamless 1-tap future biometric payments
     await SecureStorageService().savePin(pin);
@@ -166,6 +169,31 @@ class _TransactionPinModalState extends State<TransactionPinModal> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
+
+          if (_errorMessage != null && _errorMessage!.isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
 
           // 4-digit PIN row (Recessed 3D Clay Sockets)
           Row(

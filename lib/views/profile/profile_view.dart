@@ -86,7 +86,6 @@ class _ProfileViewState extends State<ProfileView> {
     final user = authProvider.user;
     final nameController = TextEditingController(text: user?.name ?? '');
     final phoneController = TextEditingController(text: user?.phone ?? '');
-    bool isSubmitting = false;
 
     showModalBottomSheet(
       context: context,
@@ -96,6 +95,8 @@ class _ProfileViewState extends State<ProfileView> {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
         final modalBg = Theme.of(ctx).cardColor;
         final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+        bool isSubmitting = false;
+        String? errorMessage;
 
         return StatefulBuilder(
           builder: (modalCtx, setModalState) {
@@ -116,6 +117,30 @@ class _ProfileViewState extends State<ProfileView> {
                       style: TextStyle(color: titleColor, fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
+                    if (errorMessage != null && errorMessage!.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                errorMessage!,
+                                style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     ClayTextField(
                       controller: nameController,
                       labelText: 'Full Name',
@@ -138,10 +163,15 @@ class _ProfileViewState extends State<ProfileView> {
                         final name = nameController.text.trim();
                         final phone = phoneController.text.trim();
                         if (name.isEmpty) {
-                          _showSnackBar('Please enter your full name.', isError: true);
+                          setModalState(() {
+                            errorMessage = 'Please enter your full name.';
+                          });
                           return;
                         }
-                        setModalState(() => isSubmitting = true);
+                        setModalState(() {
+                          isSubmitting = true;
+                          errorMessage = null;
+                        });
                         final response = await authProvider.updateProfile(name: name, phone: phone);
                         if (!mounted) return;
 
@@ -149,11 +179,10 @@ class _ProfileViewState extends State<ProfileView> {
                           if (modalCtx.mounted) Navigator.pop(modalCtx);
                           _showSnackBar('Profile details updated successfully!');
                         } else {
-                          setModalState(() => isSubmitting = false);
-                          _showSnackBar(
-                            response.message.isNotEmpty ? response.message : 'Failed to update profile.',
-                            isError: true,
-                          );
+                          setModalState(() {
+                            isSubmitting = false;
+                            errorMessage = response.message.isNotEmpty ? response.message : 'Failed to update profile.';
+                          });
                         }
                       },
                       child: const Text(
@@ -301,7 +330,6 @@ class _ProfileViewState extends State<ProfileView> {
     final bankNameController = TextEditingController(text: user?.bankName ?? '');
     final accountNumberController = TextEditingController(text: user?.bankAccountNumber ?? '');
     final accountNameController = TextEditingController(text: user?.bankAccountName ?? '');
-    bool isSubmitting = false;
 
     showModalBottomSheet(
       context: context,
@@ -312,6 +340,8 @@ class _ProfileViewState extends State<ProfileView> {
         final modalBg = Theme.of(ctx).cardColor;
         final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
         final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+        bool isSubmitting = false;
+        String? errorMessage;
 
         return StatefulBuilder(
           builder: (modalCtx, setModalState) {
@@ -355,6 +385,30 @@ class _ProfileViewState extends State<ProfileView> {
                       ],
                     ),
                     const SizedBox(height: 20),
+                    if (errorMessage != null && errorMessage!.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                errorMessage!,
+                                style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     ClayTextField(
                       controller: bankNameController,
                       labelText: 'Bank Name (e.g. GTBank, Zenith, Access)',
@@ -386,11 +440,16 @@ class _ProfileViewState extends State<ProfileView> {
                         final accName = accountNameController.text.trim();
 
                         if (bName.isEmpty || accNum.length < 10 || accName.isEmpty) {
-                          _showSnackBar('Please complete all 10-digit bank account fields.', isError: true);
+                          setModalState(() {
+                            errorMessage = 'Please complete all 10-digit bank account fields.';
+                          });
                           return;
                         }
 
-                        setModalState(() => isSubmitting = true);
+                        setModalState(() {
+                          isSubmitting = true;
+                          errorMessage = null;
+                        });
                         final res = await authProvider.updateBankDetails(
                           bankName: bName,
                           accountNumber: accNum,
@@ -403,8 +462,10 @@ class _ProfileViewState extends State<ProfileView> {
                           if (modalCtx.mounted) Navigator.pop(modalCtx);
                           _showSnackBar('Settlement bank details updated successfully!');
                         } else {
-                          setModalState(() => isSubmitting = false);
-                          _showSnackBar(res.message.isNotEmpty ? res.message : 'Failed to save bank details.', isError: true);
+                          setModalState(() {
+                            isSubmitting = false;
+                            errorMessage = res.message.isNotEmpty ? res.message : 'Failed to save bank details.';
+                          });
                         }
                       },
                       child: const Text('Save Settlement Bank', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
@@ -422,7 +483,6 @@ class _ProfileViewState extends State<ProfileView> {
   void _showUpgradeAgentModal() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final pinController = TextEditingController();
-    bool isSubmitting = false;
 
     showModalBottomSheet(
       context: context,
@@ -433,6 +493,8 @@ class _ProfileViewState extends State<ProfileView> {
         final modalBg = Theme.of(ctx).cardColor;
         final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
         final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+        bool isSubmitting = false;
+        String? errorMessage;
 
         return StatefulBuilder(
           builder: (modalCtx, setModalState) {
@@ -480,6 +542,30 @@ class _ProfileViewState extends State<ProfileView> {
                       ),
                     ),
                     const SizedBox(height: 20),
+                    if (errorMessage != null && errorMessage!.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                errorMessage!,
+                                style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     ClayTextField(
                       controller: pinController,
                       keyboardType: TextInputType.number,
@@ -497,11 +583,16 @@ class _ProfileViewState extends State<ProfileView> {
                       onTap: () async {
                         final pin = pinController.text.trim();
                         if (pin.length != 4) {
-                          _showSnackBar('Please enter your 4-digit transaction PIN.', isError: true);
+                          setModalState(() {
+                            errorMessage = 'Please enter your 4-digit transaction PIN.';
+                          });
                           return;
                         }
 
-                        setModalState(() => isSubmitting = true);
+                        setModalState(() {
+                          isSubmitting = true;
+                          errorMessage = null;
+                        });
                         final res = await authProvider.upgradeToAgent(pin: pin);
 
                         if (!mounted) return;
@@ -510,8 +601,10 @@ class _ProfileViewState extends State<ProfileView> {
                           if (modalCtx.mounted) Navigator.pop(modalCtx);
                           _showSnackBar('Account successfully upgraded to Agent Tier! 🎉');
                         } else {
-                          setModalState(() => isSubmitting = false);
-                          _showSnackBar(res.message.isNotEmpty ? res.message : 'Upgrade failed.', isError: true);
+                          setModalState(() {
+                            isSubmitting = false;
+                            errorMessage = res.message.isNotEmpty ? res.message : 'Upgrade failed.';
+                          });
                         }
                       },
                       child: const Text('Upgrade Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
@@ -531,7 +624,6 @@ class _ProfileViewState extends State<ProfileView> {
     final bvnController = TextEditingController();
     final ninController = TextEditingController();
     final dobController = TextEditingController();
-    bool isSubmitting = false;
 
     showModalBottomSheet(
       context: context,
@@ -542,6 +634,8 @@ class _ProfileViewState extends State<ProfileView> {
         final modalBg = Theme.of(ctx).cardColor;
         final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
         final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+        bool isSubmitting = false;
+        String? errorMessage;
 
         return StatefulBuilder(
           builder: (modalCtx, setModalState) {
@@ -606,6 +700,30 @@ class _ProfileViewState extends State<ProfileView> {
                       ),
                     ),
                     const SizedBox(height: 18),
+                    if (errorMessage != null && errorMessage!.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                errorMessage!,
+                                style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     ClayTextField(
                       controller: bvnController,
                       keyboardType: TextInputType.number,
@@ -639,11 +757,16 @@ class _ProfileViewState extends State<ProfileView> {
                         final dob = dobController.text.trim();
 
                         if (bvn.length != 11) {
-                          _showSnackBar('Please enter a valid 11-digit BVN.', isError: true);
+                          setModalState(() {
+                            errorMessage = 'Please enter a valid 11-digit BVN.';
+                          });
                           return;
                         }
 
-                        setModalState(() => isSubmitting = true);
+                        setModalState(() {
+                          isSubmitting = true;
+                          errorMessage = null;
+                        });
                         final res = await authProvider.submitKyc(
                           bvn: bvn,
                           nin: nin.isNotEmpty ? nin : null,
@@ -656,8 +779,10 @@ class _ProfileViewState extends State<ProfileView> {
                           if (modalCtx.mounted) Navigator.pop(modalCtx);
                           _showSnackBar('KYC Verification request submitted successfully! 🎉');
                         } else {
-                          setModalState(() => isSubmitting = false);
-                          _showSnackBar(res.message.isNotEmpty ? res.message : 'KYC verification failed.', isError: true);
+                          setModalState(() {
+                            isSubmitting = false;
+                            errorMessage = res.message.isNotEmpty ? res.message : 'KYC verification failed.';
+                          });
                         }
                       },
                       child: const Text('Submit Verification', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
@@ -685,74 +810,123 @@ class _ProfileViewState extends State<ProfileView> {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
         final modalBg = Theme.of(ctx).cardColor;
         final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+        bool isSubmitting = false;
+        String? errorMessage;
 
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: modalBg,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Change Password',
-                    style: TextStyle(color: titleColor, fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                ClayTextField(
-                  controller: oldPasswordController,
-                  obscureText: true,
-                  labelText: 'Current Password',
-                  prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF94A3B8)),
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(modalCtx).viewInsets.bottom),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: modalBg,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 ),
-                const SizedBox(height: 12),
-                ClayTextField(
-                  controller: newPasswordController,
-                  obscureText: true,
-                  labelText: 'New Password',
-                  prefixIcon: const Icon(Icons.lock_reset_rounded, color: Color(0xFF94A3B8)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Change Password',
+                        style: TextStyle(color: titleColor, fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    if (errorMessage != null && errorMessage!.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                errorMessage!,
+                                style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    ClayTextField(
+                      controller: oldPasswordController,
+                      obscureText: true,
+                      labelText: 'Current Password',
+                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF94A3B8)),
+                    ),
+                    const SizedBox(height: 12),
+                    ClayTextField(
+                      controller: newPasswordController,
+                      obscureText: true,
+                      labelText: 'New Password',
+                      prefixIcon: const Icon(Icons.lock_reset_rounded, color: Color(0xFF94A3B8)),
+                    ),
+                    const SizedBox(height: 12),
+                    ClayTextField(
+                      controller: confirmPasswordController,
+                      obscureText: true,
+                      labelText: 'Confirm New Password',
+                      prefixIcon: const Icon(Icons.lock_rounded, color: Color(0xFF94A3B8)),
+                    ),
+                    const SizedBox(height: 24),
+                    ClayButton(
+                      height: 52,
+                      depth: 12,
+                      color: Theme.of(ctx).primaryColor,
+                      isLoading: isSubmitting,
+                      onTap: () async {
+                        if (oldPasswordController.text.trim().isEmpty) {
+                          setModalState(() {
+                            errorMessage = 'Please enter your current password.';
+                          });
+                          return;
+                        }
+                        if (newPasswordController.text.length < 6) {
+                          setModalState(() {
+                            errorMessage = 'New password must be at least 6 characters.';
+                          });
+                          return;
+                        }
+                        if (newPasswordController.text != confirmPasswordController.text) {
+                          setModalState(() {
+                            errorMessage = 'New passwords do not match.';
+                          });
+                          return;
+                        }
+                        setModalState(() {
+                          isSubmitting = true;
+                          errorMessage = null;
+                        });
+                        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                        final response = await authProvider.changePassword(
+                          currentPassword: oldPasswordController.text.trim(),
+                          newPassword: newPasswordController.text.trim(),
+                          confirmPassword: confirmPasswordController.text.trim(),
+                        );
+                        if (!mounted) return;
+                        if (response.status) {
+                          if (modalCtx.mounted) Navigator.pop(modalCtx);
+                          _showSnackBar('Password updated successfully!');
+                        } else {
+                          setModalState(() {
+                            isSubmitting = false;
+                            errorMessage = response.message.isNotEmpty ? response.message : 'Failed to update password.';
+                          });
+                        }
+                      },
+                      child: const Text('Update Password', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                ClayTextField(
-                  controller: confirmPasswordController,
-                  obscureText: true,
-                  labelText: 'Confirm New Password',
-                  prefixIcon: const Icon(Icons.lock_rounded, color: Color(0xFF94A3B8)),
-                ),
-                const SizedBox(height: 24),
-                ClayButton(
-                  height: 52,
-                  depth: 12,
-                  color: Theme.of(ctx).primaryColor,
-                  onTap: () async {
-                    if (oldPasswordController.text.trim().isEmpty) {
-                      _showSnackBar('Please enter your current password.', isError: true);
-                      return;
-                    }
-                    if (newPasswordController.text.length < 6) {
-                      _showSnackBar('New password must be at least 6 characters.', isError: true);
-                      return;
-                    }
-                    if (newPasswordController.text != confirmPasswordController.text) {
-                      _showSnackBar('New passwords do not match.', isError: true);
-                      return;
-                    }
-                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                    final response = await authProvider.changePassword(
-                      currentPassword: oldPasswordController.text.trim(),
-                      newPassword: newPasswordController.text.trim(),
-                      confirmPassword: confirmPasswordController.text.trim(),
-                    );
-                    Navigator.pop(ctx);
-                    _showSnackBar(response.message, isError: !response.status);
-                  },
-                  child: const Text('Update Password', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -771,76 +945,123 @@ class _ProfileViewState extends State<ProfileView> {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
         final modalBg = Theme.of(ctx).cardColor;
         final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+        bool isSubmitting = false;
+        String? errorMessage;
 
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: modalBg,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Transaction PIN Settings',
-                    style: TextStyle(color: titleColor, fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                ClayTextField(
-                  controller: oldPinController,
-                  keyboardType: TextInputType.number,
-                  obscureText: true,
-                  maxLength: 4,
-                  labelText: 'Current PIN (if set)',
-                  prefixIcon: const Icon(Icons.pin_outlined, color: Color(0xFF94A3B8)),
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(modalCtx).viewInsets.bottom),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: modalBg,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 ),
-                const SizedBox(height: 8),
-                ClayTextField(
-                  controller: pinController,
-                  keyboardType: TextInputType.number,
-                  obscureText: true,
-                  maxLength: 4,
-                  labelText: 'New 4-Digit Transaction PIN',
-                  prefixIcon: const Icon(Icons.pin_rounded, color: Color(0xFF94A3B8)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Transaction PIN Settings',
+                        style: TextStyle(color: titleColor, fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    if (errorMessage != null && errorMessage!.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                errorMessage!,
+                                style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    ClayTextField(
+                      controller: oldPinController,
+                      keyboardType: TextInputType.number,
+                      obscureText: true,
+                      maxLength: 4,
+                      labelText: 'Current PIN (if set)',
+                      prefixIcon: const Icon(Icons.pin_outlined, color: Color(0xFF94A3B8)),
+                    ),
+                    const SizedBox(height: 8),
+                    ClayTextField(
+                      controller: pinController,
+                      keyboardType: TextInputType.number,
+                      obscureText: true,
+                      maxLength: 4,
+                      labelText: 'New 4-Digit Transaction PIN',
+                      prefixIcon: const Icon(Icons.pin_rounded, color: Color(0xFF94A3B8)),
+                    ),
+                    const SizedBox(height: 8),
+                    ClayTextField(
+                      controller: confirmPinController,
+                      keyboardType: TextInputType.number,
+                      obscureText: true,
+                      maxLength: 4,
+                      labelText: 'Confirm New 4-Digit PIN',
+                      prefixIcon: const Icon(Icons.pin_outlined, color: Color(0xFF94A3B8)),
+                    ),
+                    const SizedBox(height: 20),
+                    ClayButton(
+                      height: 52,
+                      depth: 12,
+                      color: Theme.of(ctx).primaryColor,
+                      isLoading: isSubmitting,
+                      onTap: () async {
+                        if (pinController.text.length != 4) {
+                          setModalState(() {
+                            errorMessage = 'PIN must be exactly 4 digits.';
+                          });
+                          return;
+                        }
+                        if (pinController.text != confirmPinController.text) {
+                          setModalState(() {
+                            errorMessage = 'Transaction PINs do not match.';
+                          });
+                          return;
+                        }
+                        setModalState(() {
+                          isSubmitting = true;
+                          errorMessage = null;
+                        });
+                        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                        final response = await authProvider.updatePin(
+                          currentPin: oldPinController.text.trim(),
+                          newPin: pinController.text.trim(),
+                          confirmPin: confirmPinController.text.trim(),
+                        );
+                        if (!mounted) return;
+                        if (response.status) {
+                          if (modalCtx.mounted) Navigator.pop(modalCtx);
+                          _showSnackBar('Transaction PIN saved successfully!');
+                        } else {
+                          setModalState(() {
+                            isSubmitting = false;
+                            errorMessage = response.message.isNotEmpty ? response.message : 'Failed to save transaction PIN.';
+                          });
+                        }
+                      },
+                      child: const Text('Save Transaction PIN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                ClayTextField(
-                  controller: confirmPinController,
-                  keyboardType: TextInputType.number,
-                  obscureText: true,
-                  maxLength: 4,
-                  labelText: 'Confirm New 4-Digit PIN',
-                  prefixIcon: const Icon(Icons.pin_outlined, color: Color(0xFF94A3B8)),
-                ),
-                const SizedBox(height: 20),
-                ClayButton(
-                  height: 52,
-                  depth: 12,
-                  color: Theme.of(ctx).primaryColor,
-                  onTap: () async {
-                    if (pinController.text.length != 4) {
-                      _showSnackBar('PIN must be exactly 4 digits.', isError: true);
-                      return;
-                    }
-                    if (pinController.text != confirmPinController.text) {
-                      _showSnackBar('Transaction PINs do not match.', isError: true);
-                      return;
-                    }
-                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                    final response = await authProvider.updatePin(
-                      currentPin: oldPinController.text.trim(),
-                      newPin: pinController.text.trim(),
-                      confirmPin: confirmPinController.text.trim(),
-                    );
-                    Navigator.pop(ctx);
-                    _showSnackBar(response.message, isError: !response.status);
-                  },
-                  child: const Text('Save Transaction PIN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -859,6 +1080,7 @@ class _ProfileViewState extends State<ProfileView> {
         final modalBg = Theme.of(ctx).cardColor;
         final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
         final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+        String? errorMessage;
 
         return StatefulBuilder(
           builder: (modalCtx, setModalState) {
@@ -918,6 +1140,30 @@ class _ProfileViewState extends State<ProfileView> {
                       ),
                     ),
                     const SizedBox(height: 20),
+                    if (errorMessage != null && errorMessage!.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                errorMessage!,
+                                style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     ClayTextField(
                       controller: passwordController,
                       obscureText: true,
@@ -933,11 +1179,16 @@ class _ProfileViewState extends State<ProfileView> {
                       onTap: () async {
                         final pass = passwordController.text.trim();
                         if (pass.isEmpty) {
-                          _showSnackBar('Please enter your password to confirm.', isError: true);
+                          setModalState(() {
+                            errorMessage = 'Please enter your password to confirm.';
+                          });
                           return;
                         }
 
-                        setModalState(() => isSubmitting = true);
+                        setModalState(() {
+                          isSubmitting = true;
+                          errorMessage = null;
+                        });
                         final authProvider = Provider.of<AuthProvider>(context, listen: false);
                         final response = await authProvider.deleteAccount(password: pass);
 
@@ -952,11 +1203,10 @@ class _ProfileViewState extends State<ProfileView> {
                             ),
                           );
                         } else {
-                          setModalState(() => isSubmitting = false);
-                          _showSnackBar(
-                            response.message.isNotEmpty ? response.message : 'Account deletion failed.',
-                            isError: true,
-                          );
+                          setModalState(() {
+                            isSubmitting = false;
+                            errorMessage = response.message.isNotEmpty ? response.message : 'Account deletion failed.';
+                          });
                         }
                       },
                       child: const Text('Permanently Delete Account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
@@ -1155,233 +1405,92 @@ class _ProfileViewState extends State<ProfileView> {
                 _buildSectionTitle(context, 'Security & Preferences'),
                 const SizedBox(height: 12),
 
-                // Edit Personal Details Tile
-                ClayContainer(
-                  depth: 8,
-                  cornerRadius: 18,
+                _buildTile(
+                  context,
+                  icon: Icons.person_outline_rounded,
+                  title: 'Edit Personal Info',
+                  subtitle: 'Update your name & phone number',
                   onTap: _showEditProfileModal,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.person_outline_rounded, color: primaryColor, size: 24),
-                            const SizedBox(width: 14),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Edit Personal Info',
-                                    style: TextStyle(color: titleColor, fontWeight: FontWeight.w600)),
-                                Text('Update your name & phone number',
-                                    style: TextStyle(color: subColor, fontSize: 12)),
-                              ],
-                            ),
-                          ],
-                        ),
-                        Icon(Icons.chevron_right_rounded, color: subColor),
-                      ],
-                    ),
-                  ),
+                  color: primaryColor,
                 ),
                 const SizedBox(height: 12),
 
-                // Settlement Bank Details Tile
-                ClayContainer(
-                  depth: 8,
-                  cornerRadius: 18,
+                _buildTile(
+                  context,
+                  icon: Icons.account_balance_rounded,
+                  title: 'Settlement Bank Account',
+                  subtitle: user?.bankName != null && user!.bankName!.isNotEmpty
+                      ? '${user.bankName} - ${user.bankAccountNumber}'
+                      : 'Add bank for payouts & withdrawals',
                   onTap: _showBankDetailsModal,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.account_balance_rounded, color: primaryColor, size: 24),
-                            const SizedBox(width: 14),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Settlement Bank Account',
-                                    style: TextStyle(color: titleColor, fontWeight: FontWeight.w600)),
-                                Text(
-                                  user?.bankName != null && user!.bankName!.isNotEmpty
-                                      ? '${user.bankName} - ${user.bankAccountNumber}'
-                                      : 'Add bank for payouts & withdrawals',
-                                  style: TextStyle(color: subColor, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        Icon(Icons.chevron_right_rounded, color: subColor),
-                      ],
-                    ),
-                  ),
+                  color: primaryColor,
                 ),
                 const SizedBox(height: 12),
 
-                // Account Tier & Upgrade Tile
-                ClayContainer(
-                  depth: 8,
-                  cornerRadius: 18,
+                _buildTile(
+                  context,
+                  icon: user?.userType.toLowerCase() == 'agent'
+                      ? Icons.workspace_premium_rounded
+                      : Icons.military_tech_rounded,
+                  title: user?.userType.toLowerCase() == 'agent' ? 'Agent Account Tier 🌟' : 'Upgrade to Agent Tier',
+                  subtitle: user?.userType.toLowerCase() == 'agent'
+                      ? 'Active: Enjoy discounted rates & rewards'
+                      : 'Tap to unlock agent pricing & commissions',
                   onTap: _showUpgradeAgentModal,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              user?.userType.toLowerCase() == 'agent'
-                                  ? Icons.workspace_premium_rounded
-                                  : Icons.military_tech_rounded,
-                              color: user?.userType.toLowerCase() == 'agent' ? Colors.amber : primaryColor,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 14),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  user?.userType.toLowerCase() == 'agent' ? 'Agent Account Tier 🌟' : 'Upgrade to Agent Tier',
-                                  style: TextStyle(color: titleColor, fontWeight: FontWeight.w600),
-                                ),
-                                Text(
-                                  user?.userType.toLowerCase() == 'agent'
-                                      ? 'Active: Enjoy discounted rates & rewards'
-                                      : 'Tap to unlock agent pricing & commissions',
-                                  style: TextStyle(color: subColor, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        Icon(Icons.chevron_right_rounded, color: subColor),
-                      ],
-                    ),
-                  ),
+                  color: user?.userType.toLowerCase() == 'agent' ? Colors.amber : primaryColor,
                 ),
                 const SizedBox(height: 12),
 
-                // KYC Identity Verification Tile
-                ClayContainer(
-                  depth: 8,
-                  cornerRadius: 18,
+                _buildTile(
+                  context,
+                  icon: Icons.verified_user_rounded,
+                  title: 'KYC Identity Verification',
+                  subtitle: user?.kycStatus?.toLowerCase() == 'verified' || user?.kycStatus == '1' || user?.kycStatus == 'approved'
+                      ? 'Verified ✓ (Limits unlocked)'
+                      : (user?.kycStatus?.toLowerCase() == 'pending'
+                          ? 'Under Review ⏳'
+                          : 'Tap to submit BVN / NIN verification'),
                   onTap: _showKycVerificationModal,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.verified_user_rounded, color: Color(0xFF10B981), size: 24),
-                            const SizedBox(width: 14),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('KYC Identity Verification',
-                                    style: TextStyle(color: titleColor, fontWeight: FontWeight.w600)),
-                                Text(
-                                  user?.kycStatus?.toLowerCase() == 'verified' || user?.kycStatus == '1' || user?.kycStatus == 'approved'
-                                      ? 'Verified ✓ (Limits unlocked)'
-                                      : (user?.kycStatus?.toLowerCase() == 'pending'
-                                          ? 'Under Review ⏳'
-                                          : 'Tap to submit BVN / NIN verification'),
-                                  style: TextStyle(color: subColor, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        Icon(Icons.chevron_right_rounded, color: subColor),
-                      ],
-                    ),
-                  ),
+                  color: user?.kycStatus?.toLowerCase() == 'verified' || user?.kycStatus == '1' || user?.kycStatus == 'approved'
+                      ? const Color(0xFF10B981)
+                      : ((user?.kycStatus?.toLowerCase() == 'pending')
+                          ? const Color(0xFFF59E0B)
+                          : primaryColor),
                 ),
                 const SizedBox(height: 12),
 
                 if (authProvider.isBiometricAvailable) ...[
-                  ClayContainer(
-                    depth: 8,
-                    cornerRadius: 18,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.fingerprint_rounded, color: primaryColor, size: 24),
-                              const SizedBox(width: 14),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Biometric Quick Login',
-                                      style: TextStyle(color: titleColor, fontWeight: FontWeight.w600)),
-                                  Text('Enable Fingerprint / FaceID',
-                                      style: TextStyle(color: subColor, fontSize: 12)),
-                                ],
-                              ),
-                            ],
-                          ),
-                          Switch(
-                            value: authProvider.isBiometricEnabled,
-                            activeThumbColor: primaryColor,
-                            onChanged: (val) {
-                              authProvider.toggleBiometrics(val);
-                            },
-                          ),
-                        ],
-                      ),
+                  _buildTile(
+                    context,
+                    icon: Icons.fingerprint_rounded,
+                    title: 'Biometric Quick Login',
+                    subtitle: 'Enable Fingerprint / FaceID',
+                    color: primaryColor,
+                    trailing: Switch(
+                      value: authProvider.isBiometricEnabled,
+                      activeThumbColor: primaryColor,
+                      onChanged: (val) {
+                        authProvider.toggleBiometrics(val);
+                      },
                     ),
                   ),
                   const SizedBox(height: 12),
                 ],
 
-                // App Theme Mode (Dark / Light Mode)
-                ClayContainer(
-                  depth: 8,
-                  cornerRadius: 18,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              configProvider.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                              color: primaryColor,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 14),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Dark Mode Theme',
-                                    style: TextStyle(color: titleColor, fontWeight: FontWeight.w600)),
-                                Text(
-                                  configProvider.isDarkMode ? 'Dark theme enabled' : 'Light theme enabled',
-                                  style: TextStyle(color: subColor, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        Switch(
-                          value: configProvider.isDarkMode,
-                          activeThumbColor: primaryColor,
-                          onChanged: (val) {
-                            configProvider.toggleTheme(val);
-                          },
-                        ),
-                      ],
-                    ),
+                _buildTile(
+                  context,
+                  icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                  title: 'Dark Mode Theme',
+                  subtitle: configProvider.themeMode == ThemeMode.system
+                      ? 'System Default (${isDark ? 'Dark' : 'Light'})'
+                      : (isDark ? 'Dark theme enabled' : 'Light theme enabled'),
+                  color: primaryColor,
+                  trailing: Switch(
+                    value: isDark,
+                    activeThumbColor: primaryColor,
+                    onChanged: (val) {
+                      configProvider.toggleTheme(val);
+                    },
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -1504,51 +1613,56 @@ class _ProfileViewState extends State<ProfileView> {
     required IconData icon,
     required String title,
     required String subtitle,
-    required VoidCallback onTap,
+    VoidCallback? onTap,
+    Widget? trailing,
     required Color color,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
-    return ClayContainer(
-      depth: 8,
-      cornerRadius: 18,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
+    final tileContent = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          ClayContainer(
+            depth: 6,
+            cornerRadius: 12,
+            color: color.withValues(alpha: 0.15),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(icon, color: color, size: 22),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClayContainer(
-                  depth: 6,
-                  cornerRadius: 12,
-                  color: color.withValues(alpha: 0.15),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(icon, color: color, size: 22),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: TextStyle(color: titleColor, fontWeight: FontWeight.w600, fontSize: 14)),
-                      const SizedBox(height: 2),
-                      Text(subtitle, style: TextStyle(color: subColor, fontSize: 12)),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right_rounded, color: Color(0xFF64748B)),
+                Text(title, style: TextStyle(color: titleColor, fontWeight: FontWeight.w600, fontSize: 14)),
+                const SizedBox(height: 2),
+                Text(subtitle, style: TextStyle(color: subColor, fontSize: 12)),
               ],
             ),
           ),
-        ),
+          trailing ?? const Icon(Icons.chevron_right_rounded, color: Color(0xFF64748B)),
+        ],
       ),
+    );
+
+    return ClayContainer(
+      depth: 8,
+      cornerRadius: 18,
+      child: onTap != null
+          ? Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: onTap,
+                child: tileContent,
+              ),
+            )
+          : tileContent,
     );
   }
 }

@@ -11,7 +11,7 @@ class AppConfigProvider extends ChangeNotifier {
   bool _isLoading = true;
   bool _isInitialized = false;
   String? _errorMessage;
-  ThemeMode _themeMode = ThemeMode.dark;
+  ThemeMode _themeMode = ThemeMode.system;
 
   AppConfigModel? get config => _config;
   bool get isLoading => _isLoading;
@@ -28,8 +28,10 @@ class AppConfigProvider extends ChangeNotifier {
     final mode = await _storage.getThemeMode();
     if (mode == 'light') {
       _themeMode = ThemeMode.light;
-    } else {
+    } else if (mode == 'dark') {
       _themeMode = ThemeMode.dark;
+    } else {
+      _themeMode = ThemeMode.system;
     }
     notifyListeners();
   }

@@ -31,22 +31,27 @@ class ClayContainer extends StatelessWidget {
 
   Color _getHighlightColor(Color baseColor, bool isDark) {
     if (isDark) {
-      return HSLColor.fromColor(baseColor)
-          .withLightness((HSLColor.fromColor(baseColor).lightness + 0.12).clamp(0.0, 1.0))
+      final opaqueBase = baseColor.withValues(alpha: 1.0);
+      return HSLColor.fromColor(opaqueBase)
+          .withLightness((HSLColor.fromColor(opaqueBase).lightness + 0.12).clamp(0.0, 1.0))
           .toColor()
           .withValues(alpha: 0.25);
     }
-    return Colors.white.withValues(alpha: 0.85);
+    return Colors.white.withValues(alpha: 0.90);
   }
 
   Color _getShadowColor(Color baseColor, bool isDark) {
     if (isDark) {
       return Colors.black.withValues(alpha: 0.55);
     }
-    return HSLColor.fromColor(baseColor)
-        .withLightness((HSLColor.fromColor(baseColor).lightness - 0.25).clamp(0.0, 1.0))
+    if (baseColor.alpha < 255 || baseColor.computeLuminance() > 0.4) {
+      return const Color(0xFF64748B).withValues(alpha: 0.10);
+    }
+    final opaqueBase = baseColor.withValues(alpha: 1.0);
+    return HSLColor.fromColor(opaqueBase)
+        .withLightness((HSLColor.fromColor(opaqueBase).lightness - 0.15).clamp(0.0, 1.0))
         .toColor()
-        .withValues(alpha: 0.35);
+        .withValues(alpha: 0.20);
   }
 
   @override
