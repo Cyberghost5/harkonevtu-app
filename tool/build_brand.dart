@@ -7,7 +7,7 @@ void main(List<String> args) async {
     exit(0);
   }
 
-  final brandId = args.firstWhere((a) => !a.startsWith('-'), defaultValue: '');
+  final brandId = args.firstWhere((a) => !a.startsWith('-'), orElse: () => '');
   if (brandId.isEmpty) {
     print('❌ Error: Brand ID is required.');
     printUsage();
@@ -139,37 +139,49 @@ void main(List<String> args) async {
   if (shouldGenKey && !brandKeystoreFile.existsSync()) {
     print('🔑 Generating unique JKS keystore for brand [$brandId] via keytool...');
     if (!isDryRun) {
-      final keytoolRes = await Process.run('keytool', [
-        '-genkeypair',
-        '-v',
-        '-keystore',
-        brandKeystoreFile.path,
-        '-keyalg',
-        'RSA',
-        '-keysize',
-        '2048',
-        '-validity',
-        '10000',
-        '-alias',
-        keyAlias,
-        '-storepass',
-        storePassword,
-        '-keypass',
-        keyPassword,
-        '-dname',
-        'CN=$appName, OU=Mobile, O=$appName, L=Lagos, ST=Lagos, C=NG',
-      ]);
-      print(keytoolRes.stdout);
-      if (keytoolRes.exitCode == 0) {
-        print('✅ Generated JKS keystore: ${brandKeystoreFile.path}');
+      try {
+        final keytoolCmd = _findKeytoolExecutable();
+        final keytoolRes = await Process.run(keytoolCmd, [
+          '-genkeypair',
+          '-v',
+          '-keystore',
+          brandKeystoreFile.path,
+          '-keyalg',
+          'RSA',
+          '-keysize',
+          '2048',
+          '-validity',
+          '10000',
+          '-alias',
+          keyAlias,
+          '-storepass',
+          storePassword,
+          '-keypass',
+          keyPassword,
+          '-dname',
+          'CN=$appName, OU=Mobile, O=$appName, L=Lagos, ST=Lagos, C=NG',
+        ]);
+        print(keytoolRes.stdout);
+        if (keytoolRes.exitCode == 0) {
+          print('✅ Generated JKS keystore: ${brandKeystoreFile.path}');
+          brandKeyPropFile.writeAsStringSync('''storePassword=$storePassword
+keyPassword=$keyPassword
+keyAlias=$keyAlias
+storeFile=upload-keystore.jks
+''');
+          print('✅ Generated key.properties: ${brandKeyPropFile.path}');
+        } else {
+          print('⚠️ Keytool notice/error: ${keytoolRes.stderr}');
+        }
+      } catch (e) {
+        print('⚠️ Notice: keytool command not in PATH ($e)');
+        print('ℹ️ Generating key.properties for brand [$brandId]...');
         brandKeyPropFile.writeAsStringSync('''storePassword=$storePassword
 keyPassword=$keyPassword
 keyAlias=$keyAlias
 storeFile=upload-keystore.jks
 ''');
         print('✅ Generated key.properties: ${brandKeyPropFile.path}');
-      } else {
-        print('⚠️ Keytool notice/error: ${keytoolRes.stderr}');
       }
     }
   }
@@ -265,4 +277,27 @@ Examples:
   dart run tool/build_brand.dart company_a --gen-key
   dart run tool/build_brand.dart company_a --gen-key --push --build
 ''');
+}
+
+String _findKeytoolExecutable() {
+  if (Platform.isWindows) {
+    final javaHome = Platform.environment['JAVA_HOME'];
+    if (javaHome != null && javaHome.isNotEmpty) {
+      final keytoolInJavaHome = File('$javaHome\\bin\\keytool.exe');
+      if (keytoolInJavaHome.existsSync()) return keytoolInJavaHome.path;
+    }
+
+    final commonPaths = [
+      r'C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe',
+      r'C:\Program Files\Android\Android Studio\jre\bin\keytool.exe',
+      r'C:\Program Files\Java\jdk-17\bin\keytool.exe',
+      r'C:\Program Files\Java\jdk-21\bin\keytool.exe',
+      r'C:\Program Files\Java\jdk1.8.0_301\bin\keytool.exe',
+    ];
+
+    for (final p in commonPaths) {
+      if (File(p).existsSync()) return p;
+    }
+  }
+  return 'keytool';
 }

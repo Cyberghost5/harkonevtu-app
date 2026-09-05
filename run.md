@@ -44,7 +44,7 @@ Inside `brands/acme_vtu/`, create `brand.json`:
 Execute the CLI tool to generate the release keystore, update native app configs, commit, and push the branch to GitHub:
 
 ```bash
-dart run tool/build_brand.dart acme_vtu --gen-key --push
+dart run tool/build_brand.dart tincitybill --gen-key --push
 ```
 
 > **What this command does automatically:**
