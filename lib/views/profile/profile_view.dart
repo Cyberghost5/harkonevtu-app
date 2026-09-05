@@ -526,6 +526,152 @@ class _ProfileViewState extends State<ProfileView> {
     );
   }
 
+  void _showKycVerificationModal() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final bvnController = TextEditingController();
+    final ninController = TextEditingController();
+    final dobController = TextEditingController();
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final modalBg = Theme.of(ctx).cardColor;
+        final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+        final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(modalCtx).viewInsets.bottom),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: modalBg,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        ClayContainer(
+                          depth: 10,
+                          cornerRadius: 50,
+                          color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                          child: const Padding(
+                            padding: EdgeInsets.all(10),
+                            child: Icon(Icons.verified_user_rounded, color: Color(0xFF10B981), size: 26),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'KYC Identity Verification',
+                              style: TextStyle(color: titleColor, fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Verify identity for dedicated virtual accounts & limits',
+                              style: TextStyle(color: subColor, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    ClayContainer(
+                      depth: 6,
+                      cornerRadius: 14,
+                      color: Theme.of(ctx).primaryColor.withValues(alpha: 0.08),
+                      child: const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            Icon(Icons.shield_outlined, color: Color(0xFF10B981), size: 18),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Your identity details are encrypted & used solely to generate automated virtual bank accounts and fulfill CBN compliance.',
+                                style: TextStyle(fontSize: 11, height: 1.3, color: Color(0xFF64748B)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    ClayTextField(
+                      controller: bvnController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 11,
+                      labelText: '11-Digit Bank Verification Number (BVN)',
+                      prefixIcon: const Icon(Icons.pin_rounded, color: Color(0xFF94A3B8)),
+                    ),
+                    const SizedBox(height: 12),
+                    ClayTextField(
+                      controller: ninController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 11,
+                      labelText: 'National Identity Number (NIN - Optional)',
+                      prefixIcon: const Icon(Icons.badge_rounded, color: Color(0xFF94A3B8)),
+                    ),
+                    const SizedBox(height: 12),
+                    ClayTextField(
+                      controller: dobController,
+                      labelText: 'Date of Birth (DD/MM/YYYY)',
+                      prefixIcon: const Icon(Icons.calendar_today_rounded, color: Color(0xFF94A3B8)),
+                    ),
+                    const SizedBox(height: 24),
+                    ClayButton(
+                      height: 52,
+                      depth: 12,
+                      color: const Color(0xFF10B981),
+                      isLoading: isSubmitting,
+                      onTap: () async {
+                        final bvn = bvnController.text.trim();
+                        final nin = ninController.text.trim();
+                        final dob = dobController.text.trim();
+
+                        if (bvn.length != 11) {
+                          _showSnackBar('Please enter a valid 11-digit BVN.', isError: true);
+                          return;
+                        }
+
+                        setModalState(() => isSubmitting = true);
+                        final res = await authProvider.submitKyc(
+                          bvn: bvn,
+                          nin: nin.isNotEmpty ? nin : null,
+                          dob: dob.isNotEmpty ? dob : null,
+                        );
+
+                        if (!mounted) return;
+
+                        if (res.status) {
+                          if (modalCtx.mounted) Navigator.pop(modalCtx);
+                          _showSnackBar('KYC Verification request submitted successfully! 🎉');
+                        } else {
+                          setModalState(() => isSubmitting = false);
+                          _showSnackBar(res.message.isNotEmpty ? res.message : 'KYC verification failed.', isError: true);
+                        }
+                      },
+                      child: const Text('Submit Verification', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showChangePasswordModal() {
     final oldPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
@@ -929,6 +1075,48 @@ class _ProfileViewState extends State<ProfileView> {
                                 user?.phone ?? 'No phone number',
                                 style: TextStyle(color: subColor, fontSize: 12),
                               ),
+                              const SizedBox(height: 6),
+                              GestureDetector(
+                                onTap: _showKycVerificationModal,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: (user?.kycStatus?.toLowerCase() == 'verified' || user?.kycStatus == '1' || user?.kycStatus == 'approved')
+                                        ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                                        : ((user?.kycStatus?.toLowerCase() == 'pending')
+                                            ? Colors.amber.withValues(alpha: 0.15)
+                                            : primaryColor.withValues(alpha: 0.15)),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        (user?.kycStatus?.toLowerCase() == 'verified' || user?.kycStatus == '1' || user?.kycStatus == 'approved')
+                                            ? Icons.check_circle_rounded
+                                            : ((user?.kycStatus?.toLowerCase() == 'pending') ? Icons.hourglass_top_rounded : Icons.shield_rounded),
+                                        size: 12,
+                                        color: (user?.kycStatus?.toLowerCase() == 'verified' || user?.kycStatus == '1' || user?.kycStatus == 'approved')
+                                            ? const Color(0xFF10B981)
+                                            : ((user?.kycStatus?.toLowerCase() == 'pending') ? const Color(0xFFF59E0B) : primaryColor),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        (user?.kycStatus?.toLowerCase() == 'verified' || user?.kycStatus == '1' || user?.kycStatus == 'approved')
+                                            ? 'KYC Verified'
+                                            : ((user?.kycStatus?.toLowerCase() == 'pending') ? 'KYC Pending' : 'Verify KYC'),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: (user?.kycStatus?.toLowerCase() == 'verified' || user?.kycStatus == '1' || user?.kycStatus == 'approved')
+                                              ? const Color(0xFF10B981)
+                                              : ((user?.kycStatus?.toLowerCase() == 'pending') ? const Color(0xFFF59E0B) : primaryColor),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -1041,6 +1229,44 @@ class _ProfileViewState extends State<ProfileView> {
                                   user?.userType.toLowerCase() == 'agent'
                                       ? 'Active: Enjoy discounted rates & rewards'
                                       : 'Tap to unlock agent pricing & commissions',
+                                  style: TextStyle(color: subColor, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Icon(Icons.chevron_right_rounded, color: subColor),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // KYC Identity Verification Tile
+                ClayContainer(
+                  depth: 8,
+                  cornerRadius: 18,
+                  onTap: _showKycVerificationModal,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.verified_user_rounded, color: Color(0xFF10B981), size: 24),
+                            const SizedBox(width: 14),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('KYC Identity Verification',
+                                    style: TextStyle(color: titleColor, fontWeight: FontWeight.w600)),
+                                Text(
+                                  user?.kycStatus?.toLowerCase() == 'verified' || user?.kycStatus == '1' || user?.kycStatus == 'approved'
+                                      ? 'Verified ✓ (Limits unlocked)'
+                                      : (user?.kycStatus?.toLowerCase() == 'pending'
+                                          ? 'Under Review ⏳'
+                                          : 'Tap to submit BVN / NIN verification'),
                                   style: TextStyle(color: subColor, fontSize: 12),
                                 ),
                               ],

@@ -425,6 +425,43 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<ApiResponse> submitKyc({
+    required String bvn,
+    String? nin,
+    String? dob,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final payload = <String, dynamic>{
+        'bvn': bvn.trim(),
+        if (nin != null && nin.isNotEmpty) 'nin': nin.trim(),
+        if (dob != null && dob.isNotEmpty) 'dob': dob.trim(),
+      };
+
+      var response = await _apiClient.post('/user/kyc/submit', data: payload);
+      if (!response.status) {
+        response = await _apiClient.post('/user/kyc', data: payload);
+      }
+      if (!response.status) {
+        response = await _apiClient.post('/user/dva/generate', data: {'bvn': bvn.trim()});
+      }
+
+      if (response.status) {
+        await fetchProfile();
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return response;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return ApiResponse(status: false, message: 'KYC submission failed. Please check your BVN/NIN details.');
+    }
+  }
+
   Future<void> fetchProfile() async {
     try {
       var response = await _apiClient.get('/auth/me');
