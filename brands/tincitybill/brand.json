@@ -1,6 +1,6 @@
 {
   "brand_id": "tincitybill",
-  "app_name": "NMillenium",
+  "app_name": "TinCityBill",
   "package_name": "com.harkonedesigns.tincitybill",
   "base_url": "https://tincitybill.com/api/v1",
   "git_branch": "brand/tincitybill",
