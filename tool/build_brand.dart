@@ -136,7 +136,8 @@ void main(List<String> args) async {
   final brandKeystoreFile = File('${brandDir.path}/upload-keystore.jks');
   final brandKeyPropFile = File('${brandDir.path}/key.properties');
 
-  if (shouldGenKey && !brandKeystoreFile.existsSync()) {
+  final hasKeyConfig = configJson.containsKey('store_password') || configJson.containsKey('key_alias');
+  if ((shouldGenKey || hasKeyConfig) && (!brandKeystoreFile.existsSync() || !brandKeyPropFile.existsSync())) {
     print('🔑 Generating unique JKS keystore for brand [$brandId] via keytool...');
     if (!isDryRun) {
       try {

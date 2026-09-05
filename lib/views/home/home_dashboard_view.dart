@@ -10,6 +10,8 @@ import '../../providers/dashboard_provider.dart';
 import '../../core/utils/formatters.dart';
 import '../widgets/receipt_modal.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/clay_container.dart';
+import '../widgets/clay_button.dart';
 import '../vtu/airtime_topup_screen.dart';
 import '../vtu/data_bundles_screen.dart';
 import '../bills/electricity_bills_screen.dart';
@@ -81,8 +83,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Glassmorphic Header Bar
-                GlassContainer(
+                // Top 3D Clay Header Bar
+                ClayContainer(
+                  borderRadius: 22,
+                  depth: 8,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -135,32 +139,14 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                 ),
                 const SizedBox(height: 24),
 
-                // Glassmorphic Wallet Balance Card
-                Container(
+                // 3D Inflated Clay Wallet Balance Card
+                ClayContainer(
+                  borderRadius: 26,
+                  depth: 14,
                   padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        primaryColor.withValues(alpha: 0.35),
-                        primaryColor.withValues(alpha: 0.1),
-                        const Color(0xFF1E293B),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: primaryColor.withValues(alpha: 0.4),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: primaryColor.withValues(alpha: 0.15),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF1E283C)
+                      : Colors.white,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -169,15 +155,15 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.account_balance_wallet_rounded,
-                                  color: Colors.white70, size: 18),
+                              Icon(Icons.account_balance_wallet_rounded,
+                                  color: primaryColor, size: 20),
                               const SizedBox(width: 8),
-                              const Text(
+                              Text(
                                 'Wallet Balance',
                                 style: TextStyle(
-                                  color: Colors.white70,
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
                                   fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
@@ -187,7 +173,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                               dashboardProvider.hideBalance
                                   ? Icons.visibility_off_outlined
                                   : Icons.visibility_outlined,
-                              color: Colors.white70,
+                              color: primaryColor,
                               size: 20,
                             ),
                             onPressed: () => dashboardProvider.toggleHideBalance(),
@@ -201,8 +187,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                           ? ImageFilterWidget(
                               child: Text(
                                 formattedBalance,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface,
                                   fontSize: 28,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -210,8 +196,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                             )
                           : Text(
                               formattedBalance,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontSize: 30,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.5,
@@ -220,27 +206,18 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
 
                       const SizedBox(height: 20),
 
-                      // Action button row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => widget.onTabSwitch(2), // Switch to Wallet Tab
-                              icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
-                              label: const Text('Fund Wallet',
-                                  style: TextStyle(fontWeight: FontWeight.bold)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryColor,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                            ),
-                          ),
-                        ],
+                      // 3D Pressable Clay Fund Wallet Button
+                      ClayButton(
+                        text: 'Fund Wallet',
+                        icon: Icons.add_circle_outline_rounded,
+                        onPressed: () => widget.onTabSwitch(2),
+                        height: 48,
+                        depth: 8,
                       ),
                     ],
                   ),
                 ),
+
                 const SizedBox(height: 24),
 
                 // Dedicated Virtual Bank Account Card (DVA)
@@ -718,27 +695,27 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
             }
             Navigator.push(context, MaterialPageRoute(builder: (_) => targetScreen));
           },
-          child: GlassContainer(
-            borderRadius: 18,
+          child: ClayContainer(
+            borderRadius: 20,
+            depth: 6,
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-            borderColor: itemColor.withValues(alpha: 0.3),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: itemColor.withValues(alpha: 0.18),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
                         color: itemColor.withValues(alpha: 0.25),
-                        blurRadius: 10,
+                        blurRadius: 8,
                         spreadRadius: 0,
                       ),
                     ],
                   ),
-                  child: Icon(item['icon'] as IconData, color: itemColor, size: 24),
+                  child: Icon(item['icon'] as IconData, color: itemColor, size: 22),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -757,6 +734,7 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
           ),
         );
       },
+
     );
   }
 
