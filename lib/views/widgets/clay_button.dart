@@ -92,8 +92,10 @@ class _ClayButtonState extends State<ClayButton> {
                     size: 20.0,
                   )
                 : Row(
-                    mainAxisAlignment: MainAxisSize.min,
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+
                       if (widget.icon != null) ...[
                         Icon(
                           widget.icon,
