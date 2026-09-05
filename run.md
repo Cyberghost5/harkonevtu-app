@@ -135,10 +135,10 @@ git push origin brand/tincitybill
 ### 2. On VPS (Pull & Rebuild):
 
 ```bash
-git checkout brand/acme_vtu
-git pull origin brand/acme_vtu
+git checkout brand/tincitybill
+git pull origin brand/tincitybill
 flutter pub get
-dart run tool/build_brand.dart acme_vtu --build
+dart run tool/build_brand.dart tincitybill --build
 ```
 
 ---
