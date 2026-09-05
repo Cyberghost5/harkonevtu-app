@@ -9,6 +9,10 @@ import '../../providers/dashboard_provider.dart';
 import '../../models/disco_model.dart';
 import '../widgets/transaction_pin_modal.dart';
 
+import '../widgets/clay_container.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/clay_text_field.dart';
+
 class ElectricityBillsScreen extends StatefulWidget {
   const ElectricityBillsScreen({super.key});
 
@@ -164,53 +168,55 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         final primaryColor = Theme.of(context).primaryColor;
-        return Container(
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return ClayContainer(
+          borderRadius: 24,
+          depth: 16,
+          color: isDark ? const Color(0xFF151C2C) : Colors.white,
           padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Color(0xFF151C2C),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
+              ClayContainer(
+                borderRadius: 40,
+                depth: 8,
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
+                color: const Color(0xFF10B981).withValues(alpha: 0.15),
                 child: const Icon(Icons.bolt_rounded, size: 48, color: Color(0xFF10B981)),
               ),
               const SizedBox(height: 16),
 
-              const Text(
+              Text(
                 'Electricity Token Generated',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               if (units.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(
                   'Units: $units',
-                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                  style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 14),
                 ),
               ],
               const SizedBox(height: 20),
 
-              // Token Box
-              Container(
-                width: double.infinity,
+              // 3D Recessed Token Box
+              ClayContainer(
+                borderRadius: 16,
+                depth: 8,
+                isRecessed: true,
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: primaryColor),
-                ),
+                color: isDark ? const Color(0xFF131A29) : const Color(0xFFF1F5F9),
                 child: Column(
                   children: [
                     SelectableText(
                       token,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 2.0,
@@ -218,7 +224,11 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
-                    ElevatedButton.icon(
+                    ClayButton(
+                      text: 'Copy Token',
+                      icon: Icons.copy_rounded,
+                      height: 42,
+                      borderRadius: 12,
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: token));
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -228,20 +238,17 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
                           ),
                         );
                       },
-                      icon: const Icon(Icons.copy_rounded, size: 16),
-                      label: const Text('Copy Token'),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
 
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Done'),
-                ),
+              ClayButton(
+                text: 'Done',
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                textColor: primaryColor,
+                onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
@@ -256,9 +263,8 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
     final primaryColor = Theme.of(context).primaryColor;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = Theme.of(context).cardColor;
-    final borderCol = isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0);
     final titleCol = Theme.of(context).colorScheme.onSurface;
+    final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return Scaffold(
       appBar: AppBar(
@@ -270,26 +276,24 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Disco Dropdown
+              // Disco Dropdown in 3D ClayContainer
               Text(
                 'Distribution Company (Disco)',
                 style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
 
-              Container(
+              ClayContainer(
+                borderRadius: 16,
+                depth: 8,
+                color: isDark ? const Color(0xFF192234) : Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: borderCol),
-                ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<DiscoModel>(
                     value: _selectedDisco,
                     isExpanded: true,
                     menuMaxHeight: 320,
-                    dropdownColor: cardBg,
+                    dropdownColor: isDark ? const Color(0xFF192234) : Colors.white,
                     icon: Icon(Icons.arrow_drop_down_rounded, color: titleCol),
                     items: billsProvider.discos.map((disco) {
                       return DropdownMenuItem<DiscoModel>(
@@ -310,100 +314,107 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Meter Type Toggle (Prepaid vs Postpaid)
-              const Text(
+              // Meter Type Toggle 3D Chips
+              Text(
                 'Meter Type',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
 
               Row(
                 children: [
                   Expanded(
-                    child: ChoiceChip(
-                      label: const Center(child: Text('Prepaid')),
-                      selected: _meterType == 'prepaid',
-                      selectedColor: primaryColor,
-                      backgroundColor: const Color(0xFF1A2234),
-                      labelStyle: TextStyle(
-                        color: _meterType == 'prepaid' ? Colors.white : const Color(0xFF94A3B8),
-                        fontWeight: FontWeight.bold,
-                      ),
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() => _meterType = 'prepaid');
-                          billsProvider.clearValidation();
-                        }
+                    child: ClayContainer(
+                      borderRadius: 14,
+                      depth: _meterType == 'prepaid' ? 8 : 4,
+                      isRecessed: _meterType == 'prepaid',
+                      color: _meterType == 'prepaid'
+                          ? primaryColor
+                          : (isDark ? const Color(0xFF192234) : Colors.white),
+                      onTap: () {
+                        setState(() => _meterType = 'prepaid');
+                        billsProvider.clearValidation();
                       },
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Center(
+                        child: Text(
+                          'Prepaid',
+                          style: TextStyle(
+                            color: _meterType == 'prepaid' ? Colors.white : subCol,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ChoiceChip(
-                      label: const Center(child: Text('Postpaid')),
-                      selected: _meterType == 'postpaid',
-                      selectedColor: primaryColor,
-                      backgroundColor: const Color(0xFF1A2234),
-                      labelStyle: TextStyle(
-                        color: _meterType == 'postpaid' ? Colors.white : const Color(0xFF94A3B8),
-                        fontWeight: FontWeight.bold,
-                      ),
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() => _meterType = 'postpaid');
-                          billsProvider.clearValidation();
-                        }
+                    child: ClayContainer(
+                      borderRadius: 14,
+                      depth: _meterType == 'postpaid' ? 8 : 4,
+                      isRecessed: _meterType == 'postpaid',
+                      color: _meterType == 'postpaid'
+                          ? primaryColor
+                          : (isDark ? const Color(0xFF192234) : Colors.white),
+                      onTap: () {
+                        setState(() => _meterType = 'postpaid');
+                        billsProvider.clearValidation();
                       },
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Center(
+                        child: Text(
+                          'Postpaid',
+                          style: TextStyle(
+                            color: _meterType == 'postpaid' ? Colors.white : subCol,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
 
-              // Meter Number Input & Validation Button
-              const Text(
+              // Meter Number 3D Recessed Input & Validate Button
+              Text(
                 'Meter Number',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
 
               Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
+                    child: ClayTextField(
                       controller: _meterController,
                       keyboardType: TextInputType.number,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      hintText: 'Enter Meter Number',
+                      prefixIcon: const Icon(Icons.speed_rounded, color: Color(0xFF94A3B8)),
                       onChanged: (_) => billsProvider.clearValidation(),
-                      decoration: const InputDecoration(
-                        hintText: 'Enter Meter Number',
-                        prefixIcon: Icon(Icons.speed_rounded, color: Color(0xFF94A3B8)),
-                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  ElevatedButton(
+                  ClayButton(
+                    text: 'Validate',
+                    width: 100,
+                    height: 52,
+                    isLoading: billsProvider.isValidating,
                     onPressed: billsProvider.isValidating ? null : _validateMeter,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                    ),
-                    child: billsProvider.isValidating
-                        ? const SpinKitThreeBounce(color: Colors.white, size: 16)
-                        : const Text('Validate'),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
-              // Validation Helper Banner / Customer Info
+              // Validation Helper Banner in 3D ClayContainer
               if (billsProvider.validatedCustomerName != null) ...[
-                Container(
+                ClayContainer(
+                  borderRadius: 16,
+                  depth: 8,
+                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                  borderColor: const Color(0xFF10B981).withValues(alpha: 0.4),
+                  borderWidth: 1.0,
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
-                  ),
                   child: Row(
                     children: [
                       const Icon(Icons.verified_user_rounded, color: Color(0xFF10B981), size: 24),
@@ -414,8 +425,8 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
                           children: [
                             Text(
                               billsProvider.validatedCustomerName!,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: titleCol,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
@@ -423,7 +434,7 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
                             if (billsProvider.validatedAddress != null)
                               Text(
                                 billsProvider.validatedAddress!,
-                                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                                style: TextStyle(color: subCol, fontSize: 12),
                               ),
                           ],
                         ),
@@ -433,74 +444,56 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
                 ),
                 const SizedBox(height: 20),
               ] else ...[
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.info_outline_rounded, color: Color(0xFFF59E0B), size: 16),
-                    SizedBox(width: 6),
+                    const Icon(Icons.info_outline_rounded, color: Color(0xFFF59E0B), size: 16),
+                    const SizedBox(width: 6),
                     Text(
                       'Please validate meter number before paying.',
-                      style: TextStyle(color: Color(0xFFF59E0B), fontSize: 12),
+                      style: TextStyle(color: subCol, fontSize: 12),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
               ],
 
-              // Amount Input
-              const Text(
+              // Amount Input in 3D Recessed ClayTextField
+              Text(
                 'Amount (₦)',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              TextFormField(
+              ClayTextField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                decoration: const InputDecoration(
-                  hintText: 'e.g. 2000',
-                  prefixIcon: Icon(Icons.payments_outlined, color: Color(0xFF94A3B8)),
-                ),
+                hintText: 'e.g. 2000',
+                prefixIcon: const Icon(Icons.payments_outlined, color: Color(0xFF94A3B8)),
               ),
               const SizedBox(height: 20),
 
-              // Recipient Phone Number
-              const Text(
+              // Phone Number Input in 3D Recessed ClayTextField
+              Text(
                 'Phone Number for Notification',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              TextFormField(
+              ClayTextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                decoration: const InputDecoration(
-                  hintText: 'e.g. 08012345678',
-                  prefixIcon: Icon(Icons.phone_android_rounded, color: Color(0xFF94A3B8)),
-                ),
+                hintText: 'e.g. 08012345678',
+                prefixIcon: const Icon(Icons.phone_android_rounded, color: Color(0xFF94A3B8)),
               ),
               const SizedBox(height: 36),
 
-              // Submit Button - Disabled until meter is validated
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: (billsProvider.validatedCustomerName == null || billsProvider.isLoading)
-                      ? null
-                      : _submitOrder,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: billsProvider.validatedCustomerName != null ? primaryColor : const Color(0xFF334155),
-                  ),
-                  child: billsProvider.isLoading
-                      ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                      : Text(
-                          billsProvider.validatedCustomerName != null ? 'Pay Electricity Bill' : 'Validate Meter Number First',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: billsProvider.validatedCustomerName != null ? Colors.white : const Color(0xFF94A3B8),
-                          ),
-                        ),
-                ),
+              // Submit Button
+              ClayButton(
+                text: billsProvider.validatedCustomerName != null ? 'Pay Electricity Bill' : 'Validate Meter Number First',
+                icon: Icons.power_rounded,
+                isLoading: billsProvider.isLoading,
+                color: billsProvider.validatedCustomerName != null ? primaryColor : (isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
+                onPressed: (billsProvider.validatedCustomerName == null || billsProvider.isLoading)
+                    ? null
+                    : _submitOrder,
               ),
             ],
           ),

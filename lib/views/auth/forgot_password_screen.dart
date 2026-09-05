@@ -5,6 +5,10 @@ import '../../providers/auth_provider.dart';
 import 'login_screen.dart';
 import 'reset_password_screen.dart';
 
+import '../widgets/clay_container.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/clay_text_field.dart';
+
 class ForgotPasswordScreen extends StatefulWidget {
   final Function(Widget) onNavigate;
 
@@ -73,6 +77,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return PopScope(
       canPop: false,
@@ -99,12 +104,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               children: [
                 const SizedBox(height: 20),
                 Center(
-                  child: Container(
+                  child: ClayContainer(
+                    borderRadius: 60,
+                    depth: 14,
                     padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: primaryColor.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
+                    color: isDark ? const Color(0xFF1B2436) : Colors.white,
                     child: Icon(Icons.lock_reset_rounded, size: 54, color: primaryColor),
                   ),
                 ),
@@ -113,37 +117,37 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   'Reset Your Password',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Enter the email address associated with your account and we will send you a reset code.',
-                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    fontSize: 14,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 36),
 
                 // Email Field
-                TextFormField(
+                ClayTextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Email Address',
-                    prefixIcon: Icon(Icons.email_outlined, color: Color(0xFF94A3B8)),
-                  ),
+                  labelText: 'Email Address',
+                  prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF94A3B8)),
                   validator: (v) => v == null || !v.contains('@') ? 'Enter a valid email address' : null,
                 ),
                 const SizedBox(height: 32),
 
                 // Send Reset Code Button
-                ElevatedButton(
+                ClayButton(
+                  text: 'Send Reset Code',
+                  icon: Icons.send_rounded,
+                  isLoading: authProvider.isLoading,
                   onPressed: authProvider.isLoading ? null : _handleForgotPassword,
-                  child: authProvider.isLoading
-                      ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                      : const Text('Send Reset Code', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),

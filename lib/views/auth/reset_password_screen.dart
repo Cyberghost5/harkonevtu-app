@@ -3,6 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/auth_provider.dart';
 
+import '../widgets/clay_container.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/clay_text_field.dart';
+
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
   final Function(Widget) onNavigate;
@@ -65,6 +69,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -80,12 +85,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               children: [
                 const SizedBox(height: 20),
                 Center(
-                  child: Container(
+                  child: ClayContainer(
+                    borderRadius: 60,
+                    depth: 14,
                     padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: primaryColor.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
+                    color: isDark ? const Color(0xFF1B2436) : Colors.white,
                     child: Icon(Icons.key_rounded, size: 54, color: primaryColor),
                   ),
                 ),
@@ -94,57 +98,54 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   'Create New Password',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Enter the reset code sent to ${widget.email} and set your new password.',
-                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    fontSize: 14,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 36),
 
                 // OTP Code Field
-                TextFormField(
+                ClayTextField(
                   controller: _otpController,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Reset OTP Code',
-                    prefixIcon: Icon(Icons.pin_rounded, color: Color(0xFF94A3B8)),
-                  ),
+                  labelText: 'Reset OTP Code',
+                  prefixIcon: const Icon(Icons.pin_rounded, color: Color(0xFF94A3B8)),
                   validator: (v) => v == null || v.trim().length < 4 ? 'Enter valid OTP code' : null,
                 ),
                 const SizedBox(height: 20),
 
                 // New Password Field
-                TextFormField(
+                ClayTextField(
                   controller: _newPasswordController,
                   obscureText: _obscurePassword,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'New Password',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF94A3B8)),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        color: const Color(0xFF94A3B8),
-                      ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  labelText: 'New Password',
+                  prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF94A3B8)),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: const Color(0xFF94A3B8),
                     ),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
                   validator: (v) => v == null || v.length < 6 ? 'Password must be at least 6 characters' : null,
                 ),
                 const SizedBox(height: 36),
 
                 // Reset Password Button
-                ElevatedButton(
+                ClayButton(
+                  text: 'Update Password',
+                  icon: Icons.check_circle_rounded,
+                  isLoading: authProvider.isLoading,
                   onPressed: authProvider.isLoading ? null : _handleResetPassword,
-                  child: authProvider.isLoading
-                      ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                      : const Text('Update Password', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),

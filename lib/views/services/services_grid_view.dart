@@ -9,7 +9,7 @@ import '../bills/exam_pins_screen.dart';
 import '../specialized/betting_topup_screen.dart';
 import '../specialized/airtime_to_cash_screen.dart';
 import '../specialized/voucher_printing_screen.dart';
-import '../widgets/glass_card.dart';
+import '../widgets/clay_container.dart';
 
 class ServicesGridView extends StatelessWidget {
   const ServicesGridView({super.key});
@@ -99,18 +99,23 @@ class ServicesGridView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Available VTU Services',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Select a service below to perform instant automated transactions',
-                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF64748B),
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -127,7 +132,9 @@ class ServicesGridView extends StatelessWidget {
                   final titleCol = Theme.of(context).colorScheme.onSurface;
                   final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
-                  return GestureDetector(
+                  return ClayContainer(
+                    borderRadius: 20,
+                    depth: 10,
                     onTap: () {
                       final key = service['key'] as String;
                       if (key == 'airtime') {
@@ -172,47 +179,44 @@ class ServicesGridView extends StatelessWidget {
                         );
                       }
                     },
-                    child: GlassContainer(
-                      borderRadius: 18,
-                      padding: const EdgeInsets.all(16),
-                      borderColor: serviceColor.withValues(alpha: 0.3),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: serviceColor.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Icon(service['icon'] as IconData, color: serviceColor, size: 28),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  service['title'] as String,
-                                  style: TextStyle(
-                                    color: titleCol,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
+                    padding: const EdgeInsets.all(16),
+                    borderColor: serviceColor.withValues(alpha: 0.3),
+                    borderWidth: 1.0,
+                    child: Row(
+                      children: [
+                        ClayContainer(
+                          borderRadius: 14,
+                          depth: 6,
+                          color: serviceColor.withValues(alpha: 0.15),
+                          padding: const EdgeInsets.all(12),
+                          child: Icon(service['icon'] as IconData, color: serviceColor, size: 28),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                service['title'] as String,
+                                style: TextStyle(
+                                  color: titleCol,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  service['desc'] as String,
-                                  style: TextStyle(
-                                    color: subCol,
-                                    fontSize: 12,
-                                  ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                service['desc'] as String,
+                                style: TextStyle(
+                                  color: subCol,
+                                  fontSize: 12,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          const Icon(Icons.chevron_right_rounded, color: Color(0xFF64748B)),
-                        ],
-                      ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded, color: Color(0xFF64748B)),
+                      ],
                     ),
                   );
                 },

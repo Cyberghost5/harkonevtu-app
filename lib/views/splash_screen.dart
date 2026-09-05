@@ -4,6 +4,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/app_config_provider.dart';
 import '../core/storage/secure_storage_service.dart';
+import 'widgets/clay_container.dart';
 import 'maintenance_screen.dart';
 import 'force_update_screen.dart';
 import 'onboarding_screen.dart';
@@ -88,55 +89,47 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     final configProvider = Provider.of<AppConfigProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0F172A), Color(0xFF020617)],
-          ),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
         ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Dynamic Logo with subtle glow border
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: primaryColor.withValues(alpha: 0.3),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryColor.withValues(alpha: 0.2),
-                      blurRadius: 30,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: configProvider.config?.logo1Url != null &&
-                        configProvider.config!.logo1Url!.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: configProvider.config!.logo1Url!,
-                        height: 72,
-                        width: 72,
-                        errorWidget: (_, _, _) => Icon(
+              // Dynamic 3D Claymorphism Logo Container
+              ClayContainer(
+                depth: 18,
+                spread: 4,
+                cornerRadius: 50,
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: configProvider.config?.logo1Url != null &&
+                          configProvider.config!.logo1Url!.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(50),
+                          child: CachedNetworkImage(
+                            imageUrl: configProvider.config!.logo1Url!,
+                            height: 72,
+                            width: 72,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, _, _) => Icon(
+                              Icons.bolt_rounded,
+                              size: 72,
+                              color: primaryColor,
+                            ),
+                          ),
+                        )
+                      : Icon(
                           Icons.bolt_rounded,
                           size: 72,
                           color: primaryColor,
                         ),
-                      )
-                    : Icon(
-                        Icons.bolt_rounded,
-                        size: 72,
-                        color: primaryColor,
-                      ),
+                ),
               ),
               const SizedBox(height: 28),
 
@@ -146,7 +139,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   configProvider.appName,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                         letterSpacing: 1.1,
                       ),
                 ),
@@ -156,7 +149,7 @@ class _SplashScreenState extends State<SplashScreen> {
               Text(
                 'Fast • Secure • Automated VTU',
                 style: TextStyle(
-                  color: const Color(0xFF94A3B8),
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -175,3 +168,4 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
+

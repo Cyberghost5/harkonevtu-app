@@ -7,6 +7,10 @@ import '../../providers/app_config_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../widgets/transaction_pin_modal.dart';
 
+import '../widgets/clay_container.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/clay_text_field.dart';
+
 class BettingTopupScreen extends StatefulWidget {
   const BettingTopupScreen({super.key});
 
@@ -114,7 +118,9 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
         onPinConfirmed: (pin) => _executeFunding(customerId, amount, pin),
       ),
     );
-  }  void _executeFunding(String customerId, double amount, String pin) async {
+  }
+
+  void _executeFunding(String customerId, double amount, String pin) async {
     final platformKey = (_selectedPlatform?['key'] ?? 'bet9ja') as String;
     final specProvider = Provider.of<SpecializedProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -161,9 +167,8 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
     final specProvider = Provider.of<SpecializedProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = Theme.of(context).cardColor;
-    final borderCol = isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0);
     final titleCol = Theme.of(context).colorScheme.onSurface;
+    final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return Scaffold(
       appBar: AppBar(
@@ -175,26 +180,24 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Betting Platform Dropdown
+              // Betting Platform Dropdown in 3D ClayContainer
               Text(
                 'Select Betting Platform',
                 style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
 
-              Container(
+              ClayContainer(
+                borderRadius: 16,
+                depth: 8,
+                color: isDark ? const Color(0xFF192234) : Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: borderCol),
-                ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<Map<String, dynamic>>(
                     value: _selectedPlatform,
                     isExpanded: true,
                     menuMaxHeight: 320,
-                    dropdownColor: cardBg,
+                    dropdownColor: isDark ? const Color(0xFF192234) : Colors.white,
                     icon: Icon(Icons.arrow_drop_down_rounded, color: titleCol),
                     items: _platforms.map((plat) {
                       final color = plat['color'] as Color;
@@ -222,50 +225,45 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Customer User ID Input & Validation Button
-              const Text(
+              // Customer User ID 3D Recessed Input & Validate Button
+              Text(
                 'Betting Account / User ID',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
 
               Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
+                    child: ClayTextField(
                       controller: _customerIdController,
                       keyboardType: TextInputType.text,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      hintText: 'Enter Account / User ID',
+                      prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF94A3B8)),
                       onChanged: (_) => specProvider.clearValidation(),
-                      decoration: const InputDecoration(
-                        hintText: 'Enter Account / User ID',
-                        prefixIcon: Icon(Icons.person_outline_rounded, color: Color(0xFF94A3B8)),
-                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  ElevatedButton(
+                  ClayButton(
+                    text: 'Validate',
+                    width: 100,
+                    height: 52,
+                    isLoading: specProvider.isValidating,
                     onPressed: specProvider.isValidating ? null : _validateAccount,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                    ),
-                    child: specProvider.isValidating
-                        ? const SpinKitThreeBounce(color: Colors.white, size: 16)
-                        : const Text('Validate'),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
-              // Validation Helper Banner / Customer Name Banner
+              // Validation Helper Banner in 3D ClayContainer
               if (specProvider.validatedCustomerName != null) ...[
-                Container(
+                ClayContainer(
+                  borderRadius: 16,
+                  depth: 8,
+                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                  borderColor: const Color(0xFF10B981).withValues(alpha: 0.4),
+                  borderWidth: 1.0,
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
-                  ),
                   child: Row(
                     children: [
                       const Icon(Icons.verified_user_rounded, color: Color(0xFF10B981), size: 24),
@@ -273,8 +271,8 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
                       Expanded(
                         child: Text(
                           specProvider.validatedCustomerName!,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: titleCol,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
@@ -285,57 +283,42 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
                 ),
                 const SizedBox(height: 20),
               ] else ...[
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.info_outline_rounded, color: Color(0xFFF59E0B), size: 16),
-                    SizedBox(width: 6),
+                    const Icon(Icons.info_outline_rounded, color: Color(0xFFF59E0B), size: 16),
+                    const SizedBox(width: 6),
                     Text(
                       'Please validate betting account/user ID before funding.',
-                      style: TextStyle(color: Color(0xFFF59E0B), fontSize: 12),
+                      style: TextStyle(color: subCol, fontSize: 12),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
               ],
 
-              // Amount Input
-              const Text(
+              // Amount Input in 3D Recessed ClayTextField
+              Text(
                 'Amount (₦)',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              TextFormField(
+              ClayTextField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                decoration: const InputDecoration(
-                  hintText: 'Minimum ₦100',
-                  prefixIcon: Icon(Icons.payments_outlined, color: Color(0xFF94A3B8)),
-                ),
+                hintText: 'Minimum ₦100',
+                prefixIcon: const Icon(Icons.payments_outlined, color: Color(0xFF94A3B8)),
               ),
               const SizedBox(height: 36),
 
-              // Submit Button - Disabled until betting account is validated
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: (specProvider.validatedCustomerName == null || specProvider.isLoading)
-                      ? null
-                      : _submitOrder,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: specProvider.validatedCustomerName != null ? primaryColor : const Color(0xFF334155),
-                  ),
-                  child: specProvider.isLoading
-                      ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                      : Text(
-                          specProvider.validatedCustomerName != null ? 'Fund Betting Wallet' : 'Validate Betting Account First',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: specProvider.validatedCustomerName != null ? Colors.white : const Color(0xFF94A3B8),
-                          ),
-                        ),
-                ),
+              // Submit Button
+              ClayButton(
+                text: specProvider.validatedCustomerName != null ? 'Fund Betting Wallet' : 'Validate Betting Account First',
+                icon: Icons.sports_soccer_rounded,
+                isLoading: specProvider.isLoading,
+                color: specProvider.validatedCustomerName != null ? primaryColor : (isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
+                onPressed: (specProvider.validatedCustomerName == null || specProvider.isLoading)
+                    ? null
+                    : _submitOrder,
               ),
             ],
           ),

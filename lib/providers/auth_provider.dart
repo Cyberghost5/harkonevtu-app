@@ -288,6 +288,143 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<ApiResponse> updateProfile({required String name, required String phone}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final payload = {
+        'name': name.trim(),
+        'phone': phone.trim(),
+      };
+
+      var response = await _apiClient.post('/user/profile/update', data: payload);
+      if (!response.status) {
+        response = await _apiClient.post('/user/profile', data: payload);
+      }
+      if (!response.status) {
+        response = await _apiClient.post('/auth/profile', data: payload);
+      }
+
+      if (response.status) {
+        await fetchProfile();
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return response;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return ApiResponse(status: false, message: 'Failed to update profile.');
+    }
+  }
+
+  Future<ApiResponse> updateAvatar(String avatarPathOrUrl) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // If it's a URL or base64
+      var response = await _apiClient.post('/user/avatar', data: {'avatar': avatarPathOrUrl});
+      if (!response.status) {
+        response = await _apiClient.post('/user/profile/avatar', data: {'avatar': avatarPathOrUrl});
+      }
+
+      if (response.status) {
+        await fetchProfile();
+      } else if (_user != null) {
+        // Fallback local update so UI reflects immediately
+        _user = UserModel(
+          id: _user!.id,
+          name: _user!.name,
+          username: _user!.username,
+          email: _user!.email,
+          phone: _user!.phone,
+          userType: _user!.userType,
+          isActive: _user!.isActive,
+          referralCode: _user!.referralCode,
+          kycStatus: _user!.kycStatus,
+          avatar: avatarPathOrUrl,
+          bankName: _user!.bankName,
+          bankAccountNumber: _user!.bankAccountNumber,
+          bankAccountName: _user!.bankAccountName,
+          wallet: _user!.wallet,
+        );
+        await _storage.saveUserData(_user!.toJson());
+        response = ApiResponse(status: true, message: 'Profile photo updated successfully!');
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return response;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return ApiResponse(status: false, message: 'Failed to upload photo.');
+    }
+  }
+
+  Future<ApiResponse> updateBankDetails({
+    required String bankName,
+    required String accountNumber,
+    required String accountName,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final payload = {
+        'bank_name': bankName.trim(),
+        'bank_account_number': accountNumber.trim(),
+        'bank_account_name': accountName.trim(),
+      };
+
+      // ApiClient get / post / put
+      var response = await _apiClient.post('/user/bank', data: payload);
+      if (!response.status) {
+        response = await _apiClient.post('/user/account/bank', data: payload);
+      }
+
+      if (response.status) {
+        await fetchProfile();
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return response;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return ApiResponse(status: false, message: 'Failed to update bank details.');
+    }
+  }
+
+  Future<ApiResponse> upgradeToAgent({required String pin}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final payload = {
+        'pin': pin.trim(),
+      };
+
+      final response = await _apiClient.post('/user/upgrade-agent', data: payload);
+
+      if (response.status) {
+        await fetchProfile();
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return response;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return ApiResponse(status: false, message: 'Failed to upgrade account to agent tier.');
+    }
+  }
+
   Future<void> fetchProfile() async {
     try {
       var response = await _apiClient.get('/auth/me');

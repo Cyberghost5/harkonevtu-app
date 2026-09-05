@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/specialized_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../widgets/transaction_pin_modal.dart';
+import '../widgets/clay_container.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/clay_text_field.dart';
 
 class VoucherPrintingScreen extends StatefulWidget {
   const VoucherPrintingScreen({super.key});
@@ -98,29 +100,38 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         final primaryColor = Theme.of(context).primaryColor;
+        final modalBg = Theme.of(context).cardColor;
+
         return Container(
           padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Color(0xFF151C2C),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: modalBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
+              ClayContainer(
+                depth: 12,
+                spread: 3,
+                cornerRadius: 50,
+                color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                child: const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Icon(Icons.print_rounded, size: 44, color: Color(0xFF10B981)),
                 ),
-                child: const Icon(Icons.print_rounded, size: 44, color: Color(0xFF10B981)),
               ),
               const SizedBox(height: 16),
 
-              const Text(
+              Text(
                 'Recharge Cards Generated',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 20),
 
@@ -128,73 +139,90 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: vouchers.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final item = vouchers[index] as Map<String, dynamic>;
                   final pinStr = item['pin']?.toString() ?? '1234-5678-9012';
                   final serialStr = item['serial']?.toString() ?? 'SN998877';
 
-                  return Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E293B),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF232D42)),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('PIN:', style: TextStyle(color: Color(0xFF94A3B8))),
-                            SelectableText(
-                              pinStr,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
+                  return ClayContainer(
+                    depth: 10,
+                    cornerRadius: 16,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('PIN:', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                              SelectableText(
+                                pinStr,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.5,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Serial:', style: TextStyle(color: Color(0xFF94A3B8))),
-                            SelectableText(
-                              serialStr,
-                              style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: 'PIN: $pinStr Serial: $serialStr'));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Recharge voucher pin copied!'),
-                                backgroundColor: primaryColor,
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Serial:', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                              SelectableText(
+                                serialStr,
+                                style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
                               ),
-                            );
-                          },
-                          icon: const Icon(Icons.copy_rounded, size: 14),
-                          label: const Text('Copy Voucher'),
-                        ),
-                      ],
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          ClayButton(
+                            height: 40,
+                            depth: 8,
+                            color: primaryColor.withValues(alpha: 0.15),
+                            onTap: () {
+                              Clipboard.setData(ClipboardData(text: 'PIN: $pinStr Serial: $serialStr'));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('Recharge voucher pin copied!'),
+                                  backgroundColor: primaryColor,
+                                ),
+                              );
+                            },
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.copy_rounded, size: 16, color: primaryColor),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Copy Voucher',
+                                  style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },
               ),
               const SizedBox(height: 24),
 
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Done'),
+              ClayButton(
+                height: 50,
+                depth: 8,
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                onTap: () => Navigator.pop(context),
+                child: Text(
+                  'Done',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -210,6 +238,7 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
     final configProvider = Provider.of<AppConfigProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
     final currencySymbol = configProvider.currencySymbol;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final denom = double.tryParse(_denominationController.text.trim()) ?? 0.0;
     final totalPrice = denom * _quantity;
@@ -224,9 +253,13 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Select Mobile Network',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 14),
 
@@ -236,32 +269,38 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
                   final netColor = net['color'] as Color;
 
                   return Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedNetwork = net['key'] as String;
-                        });
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedNetwork = net['key'] as String;
+                          });
+                        },
+                        child: ClayContainer(
+                          depth: isSelected ? 12 : 6,
+                          cornerRadius: 16,
                           color: isSelected
-                              ? netColor.withValues(alpha: 0.2)
-                              : Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected ? netColor : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0)),
-                            width: isSelected ? 2 : 1,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            net['name'] as String,
-                            style: TextStyle(
-                              color: isSelected ? netColor : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
+                              ? netColor.withValues(alpha: 0.25)
+                              : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected ? netColor : Colors.transparent,
+                                width: isSelected ? 2 : 0,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                net['name'] as String,
+                                style: TextStyle(
+                                  color: isSelected ? netColor : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -273,42 +312,44 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
               const SizedBox(height: 24),
 
               // Denomination Input
-              const Text(
+              Text(
                 'Card Denomination (₦)',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 8),
-              TextFormField(
+              ClayTextField(
                 controller: _denominationController,
                 keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                hintText: 'e.g. 100, 200, 500, 1000',
+                prefixIcon: Icons.payments_outlined,
                 onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  hintText: 'e.g. 100, 200, 500, 1000',
-                  prefixIcon: Icon(Icons.payments_outlined, color: Color(0xFF94A3B8)),
-                ),
               ),
               const SizedBox(height: 24),
 
               // Quantity Selector
-              const Text(
+              Text(
                 'Quantity of Cards',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 8),
 
               Row(
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1A2234),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF232D42)),
-                    ),
+                  ClayContainer(
+                    depth: 8,
+                    cornerRadius: 16,
                     child: Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.remove_rounded, color: Colors.white),
+                          icon: Icon(Icons.remove_rounded, color: isDark ? Colors.white : const Color(0xFF0F172A)),
                           onPressed: () {
                             if (_quantity > 1) {
                               setState(() {
@@ -318,14 +359,18 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
                           },
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
                             '$_quantity',
-                            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.add_rounded, color: Colors.white),
+                          icon: Icon(Icons.add_rounded, color: isDark ? Colors.white : const Color(0xFF0F172A)),
                           onPressed: () {
                             setState(() {
                               _quantity++;
@@ -336,28 +381,41 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
                     ),
                   ),
                   const Spacer(),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text('Total Price:', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
-                      Text(
-                        '$currencySymbol${totalPrice.toStringAsFixed(2)}',
-                        style: TextStyle(color: primaryColor, fontSize: 22, fontWeight: FontWeight.bold),
+                  ClayContainer(
+                    depth: 8,
+                    cornerRadius: 16,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('Total Price:', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11)),
+                          Text(
+                            '$currencySymbol${totalPrice.toStringAsFixed(2)}',
+                            style: TextStyle(color: primaryColor, fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 36),
 
               // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: specProvider.isLoading ? null : _submitOrder,
-                  child: specProvider.isLoading
-                      ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                      : const Text('Generate Recharge Pins', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ClayButton(
+                height: 54,
+                depth: 12,
+                color: primaryColor,
+                isLoading: specProvider.isLoading,
+                onTap: _submitOrder,
+                child: const Text(
+                  'Generate Recharge Pins',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -367,3 +425,4 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
     );
   }
 }
+

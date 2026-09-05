@@ -8,6 +8,10 @@ import '../../providers/app_config_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../widgets/transaction_pin_modal.dart';
 
+import '../widgets/clay_container.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/clay_text_field.dart';
+
 class AirtimeTopupScreen extends StatefulWidget {
   const AirtimeTopupScreen({super.key});
 
@@ -139,8 +143,6 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
     final vtuProvider = Provider.of<VtuProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = Theme.of(context).cardColor;
-    final borderCol = isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0);
     final titleCol = Theme.of(context).colorScheme.onSurface;
     final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
@@ -160,32 +162,30 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Network Selector Cards Row
+              // Network Selector 3D Cards Row
               Row(
                 children: _networks.map((net) {
                   final isSelected = _selectedNetwork == net['key'];
                   final netColor = net['color'] as Color;
 
                   return Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedNetwork = net['key'] as String;
-                        });
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: ClayContainer(
+                        borderRadius: 16,
+                        depth: isSelected ? 12 : 6,
+                        isRecessed: isSelected,
+                        color: isSelected
+                            ? netColor.withValues(alpha: isDark ? 0.25 : 0.15)
+                            : (isDark ? const Color(0xFF192234) : Colors.white),
+                        borderColor: isSelected ? netColor : null,
+                        borderWidth: isSelected ? 2.0 : 0.0,
+                        onTap: () {
+                          setState(() {
+                            _selectedNetwork = net['key'] as String;
+                          });
+                        },
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? netColor.withValues(alpha: 0.2)
-                              : cardBg,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected ? netColor : borderCol,
-                            width: isSelected ? 2 : 1,
-                          ),
-                        ),
                         child: Column(
                           children: [
                             CircleAvatar(
@@ -214,37 +214,34 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Phone Number Input
+              // Phone Number 3D Recessed Input
               Text(
                 'Phone Number',
                 style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              TextFormField(
+              ClayTextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                style: TextStyle(color: titleCol, fontWeight: FontWeight.bold),
+                hintText: 'e.g. 08012345678',
+                prefixIcon: Icon(Icons.phone_android_rounded, color: subCol),
                 onChanged: _onPhoneChanged,
-                decoration: InputDecoration(
-                  hintText: 'e.g. 08012345678',
-                  prefixIcon: Icon(Icons.phone_android_rounded, color: subCol),
-                  suffixIcon: vtuProvider.detectedNetwork != null
-                      ? Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: primaryColor.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              vtuProvider.detectedNetwork!.toUpperCase(),
-                              style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 11),
-                            ),
+                suffixIcon: vtuProvider.detectedNetwork != null
+                    ? Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        )
-                      : null,
-                ),
+                          child: Text(
+                            vtuProvider.detectedNetwork!.toUpperCase(),
+                            style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 11),
+                          ),
+                        ),
+                      )
+                    : null,
               ),
               const SizedBox(height: 24),
 
@@ -262,49 +259,46 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
                   final amtStr = amt.toInt().toString();
                   final isSelected = _amountController.text == amtStr;
 
-                  return ChoiceChip(
-                    label: Text('₦${AppFormatters.formatInteger(amt)}'),
-                    selected: isSelected,
-                    selectedColor: primaryColor,
-                    backgroundColor: cardBg,
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : subCol,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    side: BorderSide(
-                      color: isSelected ? primaryColor : borderCol,
-                    ),
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _amountController.text = amtStr;
-                        });
-                      }
+                  return ClayContainer(
+                    borderRadius: 14,
+                    depth: isSelected ? 8 : 4,
+                    isRecessed: isSelected,
+                    color: isSelected
+                        ? primaryColor
+                        : (isDark ? const Color(0xFF192234) : Colors.white),
+                    onTap: () {
+                      setState(() {
+                        _amountController.text = amtStr;
+                      });
                     },
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    child: Text(
+                      '₦${AppFormatters.formatInteger(amt)}',
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : subCol,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                   );
                 }).toList(),
               ),
               const SizedBox(height: 16),
 
-              TextFormField(
+              ClayTextField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  hintText: 'Or enter custom amount (₦)',
-                  prefixIcon: Icon(Icons.payments_outlined, color: Color(0xFF94A3B8)),
-                ),
+                hintText: 'Or enter custom amount (₦)',
+                prefixIcon: const Icon(Icons.payments_outlined, color: Color(0xFF94A3B8)),
               ),
               const SizedBox(height: 36),
 
               // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: vtuProvider.isLoading ? null : _submitOrder,
-                  child: vtuProvider.isLoading
-                      ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                      : const Text('Proceed to Top Up', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ),
+              ClayButton(
+                text: 'Proceed to Top Up',
+                icon: Icons.flash_on_rounded,
+                isLoading: vtuProvider.isLoading,
+                onPressed: vtuProvider.isLoading ? null : _submitOrder,
               ),
             ],
           ),

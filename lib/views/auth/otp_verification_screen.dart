@@ -5,6 +5,9 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/auth_provider.dart';
 import '../navigation/main_navigation_shell.dart';
 
+import '../widgets/clay_container.dart';
+import '../widgets/clay_button.dart';
+
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
   final Function(Widget) onNavigate;
@@ -140,6 +143,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -152,12 +156,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 20),
-              Container(
+              ClayContainer(
+                borderRadius: 60,
+                depth: 14,
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
+                color: isDark ? const Color(0xFF1B2436) : Colors.white,
                 child: Icon(Icons.mark_email_read_rounded, size: 54, color: primaryColor),
               ),
               const SizedBox(height: 24),
@@ -165,61 +168,72 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 'Verify Email Address',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                     ),
               ),
               const SizedBox(height: 12),
               RichText(
                 textAlign: TextAlign.center,
                 text: TextSpan(
-                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    fontSize: 14,
+                  ),
                   children: [
                     const TextSpan(text: 'Enter the 6-digit verification code sent to '),
                     TextSpan(
                       text: widget.email,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 40),
 
-              // OTP Digits Row
+              // OTP Digits Row in 3D Recessed Clay Containers
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: List.generate(6, (index) {
                   return SizedBox(
-                    width: 46,
-                    height: 56,
-                    child: TextFormField(
-                      controller: _controllers[index],
-                      focusNode: _focusNodes[index],
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      maxLength: 1,
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-                      decoration: InputDecoration(
-                        counterText: '',
-                        contentPadding: EdgeInsets.zero,
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF334155)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: primaryColor, width: 2),
+                    width: 48,
+                    height: 58,
+                    child: ClayContainer(
+                      isRecessed: true,
+                      depth: 6,
+                      borderRadius: 14,
+                      color: isDark ? const Color(0xFF131A29) : const Color(0xFFF1F5F9),
+                      child: Center(
+                        child: TextField(
+                          controller: _controllers[index],
+                          focusNode: _focusNodes[index],
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          maxLength: 1,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          ),
+                          decoration: const InputDecoration(
+                            counterText: '',
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          onChanged: (value) {
+                            if (value.isNotEmpty && index < 5) {
+                              _focusNodes[index + 1].requestFocus();
+                            } else if (value.isEmpty && index > 0) {
+                              _focusNodes[index - 1].requestFocus();
+                            }
+                            if (_getOtpCode().length == 6) {
+                              _handleVerify();
+                            }
+                          },
                         ),
                       ),
-                      onChanged: (value) {
-                        if (value.isNotEmpty && index < 5) {
-                          _focusNodes[index + 1].requestFocus();
-                        } else if (value.isEmpty && index > 0) {
-                          _focusNodes[index - 1].requestFocus();
-                        }
-                        if (_getOtpCode().length == 6) {
-                          _handleVerify();
-                        }
-                      },
                     ),
                   );
                 }),
@@ -227,14 +241,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               const SizedBox(height: 40),
 
               // Verify Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: authProvider.isLoading ? null : _handleVerify,
-                  child: authProvider.isLoading
-                      ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                      : const Text('Verify Code', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ),
+              ClayButton(
+                text: 'Verify Code',
+                icon: Icons.verified_user_rounded,
+                isLoading: authProvider.isLoading,
+                onPressed: authProvider.isLoading ? null : _handleVerify,
               ),
               const SizedBox(height: 28),
 

@@ -9,6 +9,10 @@ import '../../providers/dashboard_provider.dart';
 import '../../models/data_plan_model.dart';
 import '../widgets/transaction_pin_modal.dart';
 
+import '../widgets/clay_container.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/clay_text_field.dart';
+
 class DataBundlesScreen extends StatefulWidget {
   const DataBundlesScreen({super.key});
 
@@ -166,8 +170,6 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
     }).toList();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = Theme.of(context).cardColor;
-    final borderCol = isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0);
     final titleCol = Theme.of(context).colorScheme.onSurface;
     final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
@@ -181,7 +183,7 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Select Network
+              // Select Network 3D Cards Row
               Text(
                 'Select Mobile Network',
                 style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
@@ -193,27 +195,25 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
                   final netColor = net['color'] as Color;
 
                   return Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedNetwork = net['key'] as String;
-                          _selectedPlan = null;
-                        });
-                        vtuProvider.fetchDataPlans(net['key'] as String);
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: ClayContainer(
+                        borderRadius: 16,
+                        depth: isSelected ? 12 : 6,
+                        isRecessed: isSelected,
+                        color: isSelected
+                            ? netColor.withValues(alpha: isDark ? 0.25 : 0.15)
+                            : (isDark ? const Color(0xFF192234) : Colors.white),
+                        borderColor: isSelected ? netColor : null,
+                        borderWidth: isSelected ? 2.0 : 0.0,
+                        onTap: () {
+                          setState(() {
+                            _selectedNetwork = net['key'] as String;
+                            _selectedPlan = null;
+                          });
+                          vtuProvider.fetchDataPlans(net['key'] as String);
+                        },
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? netColor.withValues(alpha: 0.2)
-                              : cardBg,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected ? netColor : borderCol,
-                            width: isSelected ? 2 : 1,
-                          ),
-                        ),
                         child: Column(
                           children: [
                             CircleAvatar(
@@ -242,48 +242,50 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Phone Number Input
+              // Phone Number 3D Recessed Input
               Text(
                 'Recipient Phone Number',
                 style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              TextFormField(
+              ClayTextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                style: TextStyle(color: titleCol, fontWeight: FontWeight.bold),
+                hintText: 'e.g. 08012345678',
+                prefixIcon: Icon(Icons.phone_android_rounded, color: subCol),
                 onChanged: _onPhoneChanged,
-                decoration: InputDecoration(
-                  hintText: 'e.g. 08012345678',
-                  prefixIcon: Icon(Icons.phone_android_rounded, color: subCol),
-                ),
               ),
               const SizedBox(height: 24),
 
-              // Data Type Filter Chips
+              // Data Type Filter 3D Chips
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: _typeFilters.map((tf) {
                     final isSelected = _selectedTypeFilter == tf['key'];
                     return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: ChoiceChip(
-                        label: Text(tf['label']!),
-                        selected: isSelected,
-                        selectedColor: primaryColor,
-                        backgroundColor: const Color(0xFF1A2234),
-                        labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : const Color(0xFF94A3B8),
-                          fontWeight: FontWeight.bold,
-                        ),
-                        onSelected: (selected) {
-                          if (selected) {
-                            setState(() {
-                              _selectedTypeFilter = tf['key']!;
-                            });
-                          }
+                      padding: const EdgeInsets.only(right: 10.0),
+                      child: ClayContainer(
+                        borderRadius: 14,
+                        depth: isSelected ? 8 : 4,
+                        isRecessed: isSelected,
+                        color: isSelected
+                            ? primaryColor
+                            : (isDark ? const Color(0xFF192234) : Colors.white),
+                        onTap: () {
+                          setState(() {
+                            _selectedTypeFilter = tf['key']!;
+                          });
                         },
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        child: Text(
+                          tf['label']!,
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : subCol,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
                       ),
                     );
                   }).toList(),
@@ -291,33 +293,31 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Data Plans Catalog
-              const Text(
+              // Data Plans Catalog Grid
+              Text(
                 'Select Data Plan',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(color: titleCol, fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
 
               vtuProvider.isLoading
-                  ? Container(
-                      height: 160,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                  ? ClayContainer(
+                      borderRadius: 16,
+                      depth: 6,
+                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                      padding: const EdgeInsets.all(40),
                       child: Center(child: SpinKitThreeBounce(color: primaryColor, size: 20)),
                     )
                   : filteredPlans.isEmpty
-                      ? Container(
+                      ? ClayContainer(
+                          borderRadius: 16,
+                          depth: 6,
+                          color: isDark ? const Color(0xFF1A2234) : Colors.white,
                           padding: const EdgeInsets.all(28),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1A2234),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
                               'No data plans found for selected filter.',
-                              style: TextStyle(color: Color(0xFF94A3B8)),
+                              style: TextStyle(color: subCol),
                             ),
                           ),
                         )
@@ -335,72 +335,68 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
                             final plan = filteredPlans[index];
                             final isSelected = _selectedPlan?.id == plan.id;
 
-                            return GestureDetector(
+                            return ClayContainer(
+                              borderRadius: 16,
+                              depth: isSelected ? 10 : 5,
+                              isRecessed: isSelected,
+                              color: isSelected
+                                  ? primaryColor.withValues(alpha: isDark ? 0.25 : 0.15)
+                                  : (isDark ? const Color(0xFF192234) : Colors.white),
+                              borderColor: isSelected ? primaryColor : null,
+                              borderWidth: isSelected ? 2.0 : 0.0,
                               onTap: () {
                                 setState(() {
                                   _selectedPlan = plan;
                                 });
                               },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? primaryColor.withValues(alpha: 0.18)
-                                      : cardBg,
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: isSelected ? primaryColor : borderCol,
-                                    width: isSelected ? 2 : 1,
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    plan.planName,
+                                    style: TextStyle(
+                                      color: isSelected ? primaryColor : titleCol,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      plan.planName,
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    AppFormatters.formatCurrency(plan.price, currencySymbol),
+                                    style: TextStyle(
+                                      color: isSelected ? primaryColor : titleCol,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 12,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? primaryColor : primaryColor.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      plan.validity.isNotEmpty ? plan.validity : plan.typeLabel,
                                       style: TextStyle(
-                                        color: isSelected ? primaryColor : titleCol,
+                                        color: isSelected ? Colors.white : primaryColor,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 13,
+                                        fontSize: 9,
                                       ),
                                       textAlign: TextAlign.center,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      AppFormatters.formatCurrency(plan.price, currencySymbol),
-                                      style: TextStyle(
-                                        color: isSelected ? primaryColor : titleCol,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 12,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: isSelected ? primaryColor : primaryColor.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        plan.validity.isNotEmpty ? plan.validity : plan.typeLabel,
-                                        style: TextStyle(
-                                          color: isSelected ? Colors.white : primaryColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 9,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             );
                           },
@@ -408,14 +404,11 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
               const SizedBox(height: 32),
 
               // Submit Purchase Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: vtuProvider.isLoading ? null : _submitOrder,
-                  child: vtuProvider.isLoading
-                      ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                      : const Text('Purchase Data Bundle', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ),
+              ClayButton(
+                text: 'Purchase Data Bundle',
+                icon: Icons.wifi_rounded,
+                isLoading: vtuProvider.isLoading,
+                onPressed: vtuProvider.isLoading ? null : _submitOrder,
               ),
             ],
           ),

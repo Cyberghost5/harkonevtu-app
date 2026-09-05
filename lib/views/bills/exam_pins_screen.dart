@@ -9,6 +9,10 @@ import '../../providers/app_config_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../widgets/transaction_pin_modal.dart';
 
+import '../widgets/clay_container.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/clay_text_field.dart';
+
 class ExamPinsScreen extends StatefulWidget {
   const ExamPinsScreen({super.key});
 
@@ -114,28 +118,32 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         final primaryColor = Theme.of(context).primaryColor;
-        return Container(
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return ClayContainer(
+          borderRadius: 24,
+          depth: 16,
+          color: isDark ? const Color(0xFF151C2C) : Colors.white,
           padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Color(0xFF151C2C),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
+              ClayContainer(
+                borderRadius: 40,
+                depth: 8,
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
+                color: const Color(0xFF10B981).withValues(alpha: 0.15),
                 child: const Icon(Icons.school_rounded, size: 44, color: Color(0xFF10B981)),
               ),
               const SizedBox(height: 16),
 
-              const Text(
+              Text(
                 'Exam PIN Purchased Successfully',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 20),
 
@@ -149,23 +157,22 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
                   final pinStr = item['pin']?.toString() ?? '';
                   final serialStr = item['serial']?.toString() ?? '';
 
-                  return Container(
+                  return ClayContainer(
+                    borderRadius: 16,
+                    depth: 8,
+                    isRecessed: true,
                     padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E293B),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF232D42)),
-                    ),
+                    color: isDark ? const Color(0xFF131A29) : const Color(0xFFF1F5F9),
                     child: Column(
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('PIN:', style: TextStyle(color: Color(0xFF94A3B8))),
+                            Text('PIN:', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
                             SelectableText(
                               pinStr,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1.5,
@@ -178,7 +185,7 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Serial:', style: TextStyle(color: Color(0xFF94A3B8))),
+                              Text('Serial:', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
                               SelectableText(
                                 serialStr,
                                 style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
@@ -186,8 +193,12 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
                             ],
                           ),
                         ],
-                        const SizedBox(height: 10),
-                        ElevatedButton.icon(
+                        const SizedBox(height: 12),
+                        ClayButton(
+                          text: 'Copy PIN Details',
+                          icon: Icons.copy_rounded,
+                          height: 42,
+                          borderRadius: 12,
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: 'PIN: $pinStr Serial: $serialStr'));
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -197,8 +208,6 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
                               ),
                             );
                           },
-                          icon: const Icon(Icons.copy_rounded, size: 14),
-                          label: const Text('Copy PIN Details'),
                         ),
                       ],
                     ),
@@ -207,12 +216,11 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
               ),
               const SizedBox(height: 24),
 
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Done'),
-                ),
+              ClayButton(
+                text: 'Done',
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                textColor: primaryColor,
+                onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
@@ -232,8 +240,6 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
     final totalPrice = (selectedExam['price'] as double) * _quantity;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = Theme.of(context).cardColor;
-    final borderCol = isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0);
     final titleCol = Theme.of(context).colorScheme.onSurface;
     final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
@@ -253,40 +259,37 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Exam Type Cards
+              // Exam Type 3D Selector Cards
               Column(
                 children: List.generate(_examTypes.length, (index) {
                   final exam = _examTypes[index];
                   final isSelected = _selectedExamIndex == index;
                   final examColor = exam['color'] as Color;
 
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedExamIndex = index;
-                      });
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 12),
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: ClayContainer(
+                      borderRadius: 18,
+                      depth: isSelected ? 12 : 6,
+                      isRecessed: isSelected,
+                      color: isSelected
+                          ? examColor.withValues(alpha: isDark ? 0.25 : 0.15)
+                          : (isDark ? const Color(0xFF192234) : Colors.white),
+                      borderColor: isSelected ? examColor : null,
+                      borderWidth: isSelected ? 2.0 : 0.0,
+                      onTap: () {
+                        setState(() {
+                          _selectedExamIndex = index;
+                        });
+                      },
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? examColor.withValues(alpha: 0.15)
-                            : cardBg,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: isSelected ? examColor : borderCol,
-                          width: isSelected ? 2 : 1,
-                        ),
-                      ),
                       child: Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: examColor.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                          ClayContainer(
+                            borderRadius: 12,
+                            depth: 6,
+                            color: examColor.withValues(alpha: 0.2),
+                            padding: const EdgeInsets.all(10),
                             child: Icon(Icons.school_rounded, color: examColor, size: 24),
                           ),
                           const SizedBox(width: 16),
@@ -332,25 +335,24 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Quantity Selector
-              const Text(
+              // Quantity Selector 3D Box
+              Text(
                 'Quantity',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
 
               Row(
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1A2234),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF232D42)),
-                    ),
+                  ClayContainer(
+                    borderRadius: 16,
+                    depth: 8,
+                    color: isDark ? const Color(0xFF192234) : Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     child: Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.remove_rounded, color: Colors.white),
+                          icon: Icon(Icons.remove_rounded, color: titleCol),
                           onPressed: () {
                             if (_quantity > 1) {
                               setState(() {
@@ -363,11 +365,11 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
                             '$_quantity',
-                            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: titleCol, fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.add_rounded, color: Colors.white),
+                          icon: Icon(Icons.add_rounded, color: titleCol),
                           onPressed: () {
                             setState(() {
                               _quantity++;
@@ -381,7 +383,7 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text('Total Amount:', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+                      Text('Total Amount:', style: TextStyle(color: subCol, fontSize: 12)),
                       Text(
                         '$currencySymbol${totalPrice.toStringAsFixed(2)}',
                         style: TextStyle(color: primaryColor, fontSize: 22, fontWeight: FontWeight.bold),
@@ -392,32 +394,26 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Recipient Phone Input
-              const Text(
+              // Recipient Phone 3D Recessed Input
+              Text(
                 'Phone Number for PIN Receipt',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              TextFormField(
+              ClayTextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                decoration: const InputDecoration(
-                  hintText: 'e.g. 08012345678',
-                  prefixIcon: Icon(Icons.phone_android_rounded, color: Color(0xFF94A3B8)),
-                ),
+                hintText: 'e.g. 08012345678',
+                prefixIcon: const Icon(Icons.phone_android_rounded, color: Color(0xFF94A3B8)),
               ),
               const SizedBox(height: 36),
 
               // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: billsProvider.isLoading ? null : _submitOrder,
-                  child: billsProvider.isLoading
-                      ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                      : const Text('Purchase Exam PIN', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ),
+              ClayButton(
+                text: 'Purchase Exam PIN',
+                icon: Icons.school_rounded,
+                isLoading: billsProvider.isLoading,
+                onPressed: billsProvider.isLoading ? null : _submitOrder,
               ),
             ],
           ),

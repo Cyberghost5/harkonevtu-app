@@ -9,6 +9,10 @@ import '../navigation/main_navigation_shell.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 
+import '../widgets/clay_container.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/clay_text_field.dart';
+
 class LoginScreen extends StatefulWidget {
   final Function(Widget) onNavigate;
   final VoidCallback? onLoginSuccess;
@@ -23,14 +27,31 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _loginController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
+  late AnimationController _animController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
+    );
+  }
+
   @override
   void dispose() {
+    _animController.dispose();
     _loginController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -104,6 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final configProvider = Provider.of<AppConfigProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: SafeArea(
@@ -116,51 +138,59 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Dynamic Logo & Header
+                  // Animated 3D Floating Logo Badge with rounded clip
                   Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: primaryColor.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
+                    child: ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: ClayContainer(
+                        borderRadius: 60,
+                        depth: 16,
+                        spread: 3,
+                        padding: const EdgeInsets.all(18),
+                        color: isDark ? const Color(0xFF1B2436) : Colors.white,
+                        child: configProvider.config?.logo1Url != null &&
+                                configProvider.config!.logo1Url!.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(50),
+                                child: CachedNetworkImage(
+                                  imageUrl: configProvider.config!.logo1Url!,
+                                  height: 60,
+                                  width: 60,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (_, _, _) => Icon(Icons.bolt_rounded, size: 60, color: primaryColor),
+                                ),
+                              )
+                            : Icon(Icons.bolt_rounded, size: 60, color: primaryColor),
                       ),
-                      child: configProvider.config?.logo1Url != null &&
-                              configProvider.config!.logo1Url!.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: configProvider.config!.logo1Url!,
-                              height: 56,
-                              width: 56,
-                              errorWidget: (_, _, _) => Icon(Icons.bolt_rounded, size: 56, color: primaryColor),
-                            )
-                          : Icon(Icons.bolt_rounded, size: 56, color: primaryColor),
                     ),
                   ),
-                  const SizedBox(height: 20),
+
+                  const SizedBox(height: 24),
                   Text(
                     'Welcome Back',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
                         ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Sign in to access your ${configProvider.appName} wallet',
-                    style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      fontSize: 14,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 36),
 
-                  // Login Input (Email or Phone)
-                  TextFormField(
+                  // Login Input (Email or Phone) in 3D Recessed ClayTextField
+                  ClayTextField(
                     controller: _loginController,
                     keyboardType: TextInputType.emailAddress,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
-                      labelText: 'Email or Phone Number',
-                      prefixIcon: Icon(Icons.person_outline_rounded, color: Color(0xFF94A3B8)),
-                    ),
+                    labelText: 'Email or Phone Number',
+                    prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF94A3B8)),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Please enter your email or phone number';
@@ -170,25 +200,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Password Input
-                  TextFormField(
+                  // Password Input in 3D Recessed ClayTextField
+                  ClayTextField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF94A3B8)),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                          color: const Color(0xFF94A3B8),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
+                    labelText: 'Password',
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF94A3B8)),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: const Color(0xFF94A3B8),
                       ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -215,29 +242,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Submit Button
-                  ElevatedButton(
+                  // Submit Button in 3D ClayButton
+                  ClayButton(
+                    text: 'Sign In',
+                    icon: Icons.login_rounded,
+                    isLoading: authProvider.isLoading,
                     onPressed: authProvider.isLoading ? null : _handleLogin,
-                    child: authProvider.isLoading
-                        ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                        : const Text('Sign In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
 
-                  // Biometrics Login Button
+                  // Biometrics Login Button in 3D ClayButton
                   if (authProvider.isBiometricAvailable) ...[
                     const SizedBox(height: 16),
-                    OutlinedButton.icon(
+                    ClayButton(
+                      text: 'Quick Biometric Login',
+                      icon: Icons.fingerprint_rounded,
+                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                      textColor: primaryColor,
                       onPressed: _handleBiometricsLogin,
-                      icon: Icon(Icons.fingerprint_rounded, color: primaryColor),
-                      label: Text(
-                        'Quick Biometric Login',
-                        style: TextStyle(color: primaryColor, fontWeight: FontWeight.w600),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: primaryColor.withValues(alpha: 0.5)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
                     ),
                   ],
 

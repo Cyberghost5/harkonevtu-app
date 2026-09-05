@@ -1,11 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../providers/specialized_provider.dart';
 import '../../providers/app_config_provider.dart';
 import '../../core/utils/formatters.dart';
 import '../../providers/auth_provider.dart';
+
+import '../widgets/clay_container.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/clay_text_field.dart';
 
 class AirtimeToCashScreen extends StatefulWidget {
   const AirtimeToCashScreen({super.key});
@@ -17,7 +23,9 @@ class AirtimeToCashScreen extends StatefulWidget {
 class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
   final _phoneController = TextEditingController();
   final _amountController = TextEditingController();
+  final _referenceController = TextEditingController();
   final String _selectedNetwork = 'mtn';
+  XFile? _proofFile;
 
   @override
   void initState() {
@@ -35,13 +43,97 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
   void dispose() {
     _phoneController.dispose();
     _amountController.dispose();
+    _referenceController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickProofImage() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = Theme.of(context).cardColor;
+    final titleCol = isDark ? Colors.white : const Color(0xFF0F172A);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Attach Proof of Transfer',
+              style: TextStyle(color: titleCol, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ClayContainer(
+                    depth: 8,
+                    cornerRadius: 16,
+                    color: isDark ? const Color(0xFF1E283C) : const Color(0xFFF1F5F9),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      final file = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 80);
+                      if (file != null) {
+                        setState(() => _proofFile = file);
+                      }
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Icon(Icons.camera_alt_rounded, size: 28, color: Color(0xFF45BAE6)),
+                          SizedBox(height: 6),
+                          Text('Camera', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: ClayContainer(
+                    depth: 8,
+                    cornerRadius: 16,
+                    color: isDark ? const Color(0xFF1E283C) : const Color(0xFFF1F5F9),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      final file = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 80);
+                      if (file != null) {
+                        setState(() => _proofFile = file);
+                      }
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Icon(Icons.photo_library_rounded, size: 28, color: Color(0xFF45BAE6)),
+                          SizedBox(height: 6),
+                          Text('Gallery', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _submitRequest() async {
     final phone = _phoneController.text.trim();
     final amountText = _amountController.text.trim();
     final amount = double.tryParse(amountText) ?? 0.0;
+    final reference = _referenceController.text.trim();
 
     final specProvider = Provider.of<SpecializedProvider>(context, listen: false);
     final settings = specProvider.airtimeToCashSettings;
@@ -61,6 +153,8 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
       network: _selectedNetwork,
       phone: phone,
       amount: amount,
+      proofPath: _proofFile?.path,
+      reference: reference.isNotEmpty ? reference : null,
     );
 
     if (!mounted) return;
@@ -75,6 +169,8 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
         ),
       );
       _amountController.clear();
+      _referenceController.clear();
+      setState(() => _proofFile = null);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -101,6 +197,10 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
 
     final ussdSample = '*321*$transferPhone*1000*0000#';
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleCol = Theme.of(context).colorScheme.onSurface;
+    final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Airtime to Cash'),
@@ -113,30 +213,30 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Network Badge
-                    Container(
+                    // Network Badge 3D ClayContainer
+                    ClayContainer(
+                      borderRadius: 16,
+                      depth: 8,
+                      color: const Color(0xFFFACC15).withValues(alpha: 0.15),
+                      borderColor: const Color(0xFFFACC15).withValues(alpha: 0.4),
+                      borderWidth: 1.0,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFACC15).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFFACC15).withValues(alpha: 0.4)),
-                      ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.phone_android_rounded, color: Color(0xFFFACC15), size: 22),
-                          SizedBox(width: 12),
+                          const Icon(Icons.phone_android_rounded, color: Color(0xFFFACC15), size: 22),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'MTN Airtime Share \'N\' Sell Supported',
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                  style: TextStyle(color: titleCol, fontWeight: FontWeight.bold, fontSize: 13),
                                 ),
-                                SizedBox(height: 2),
+                                const SizedBox(height: 2),
                                 Text(
                                   'Convert excess MTN airtime balance to wallet cash',
-                                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                                  style: TextStyle(color: subCol, fontSize: 11),
                                 ),
                               ],
                             ),
@@ -146,23 +246,21 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Destination Receiver Phone Box
-                    Container(
+                    // Destination Receiver Phone 3D Box
+                    ClayContainer(
+                      borderRadius: 18,
+                      depth: 10,
+                      color: isDark ? const Color(0xFF192234) : Colors.white,
                       padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
-                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
+                              Text(
                                 'MTN Receiver Phone Number',
-                                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
+                                style: TextStyle(color: subCol, fontSize: 12, fontWeight: FontWeight.w500),
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -183,14 +281,19 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
                             children: [
                               Text(
                                 transferPhone,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: titleCol,
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.5,
                                 ),
                               ),
-                              ElevatedButton.icon(
+                              ClayButton(
+                                text: 'Copy',
+                                icon: Icons.copy_rounded,
+                                width: 84,
+                                height: 38,
+                                borderRadius: 10,
                                 onPressed: () {
                                   Clipboard.setData(ClipboardData(text: transferPhone));
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -200,32 +303,25 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
                                     ),
                                   );
                                 },
-                                icon: const Icon(Icons.copy_rounded, size: 14),
-                                label: const Text('Copy Number'),
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 10),
                           Text(
                             'Allowed Range: ${AppFormatters.formatCurrency(num.tryParse(minAmount.toString()) ?? 0, currencySymbol)} - ${AppFormatters.formatCurrency(num.tryParse(maxAmount.toString()) ?? 0, currencySymbol)} per request.',
-                            style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11),
+                            style: TextStyle(color: subCol, fontSize: 11),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 24),
 
-                    // Detailed Instructions Card
-                    Container(
+                    // Detailed Instructions 3D ClayContainer Card
+                    ClayContainer(
+                      borderRadius: 18,
+                      depth: 10,
+                      color: isDark ? const Color(0xFF192234) : Colors.white,
                       padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2B364E) : const Color(0xFFE2E8F0)),
-                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -235,7 +331,7 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
                               const SizedBox(width: 8),
                               Text(
                                 'How to Transfer Airtime on MTN',
-                                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold, fontSize: 14),
+                                style: TextStyle(color: titleCol, fontWeight: FontWeight.bold, fontSize: 14),
                               ),
                             ],
                           ),
@@ -277,49 +373,120 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Sender Phone Number Input
-                    const Text(
+                    // Sender Phone Number 3D Recessed Input
+                    Text(
                       'Your Sending Phone Number',
-                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
-                    TextFormField(
+                    ClayTextField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. 08012345678',
-                        prefixIcon: Icon(Icons.phone_android_rounded, color: Color(0xFF94A3B8)),
-                      ),
+                      hintText: 'e.g. 08012345678',
+                      prefixIcon: const Icon(Icons.phone_android_rounded, color: Color(0xFF94A3B8)),
                     ),
                     const SizedBox(height: 20),
 
-                    // Amount Input
+                    // Amount 3D Recessed Input
                     Text(
                       'Transferred Airtime Amount (₦$minAmount - ₦$maxAmount)',
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
-                    TextFormField(
+                    ClayTextField(
                       controller: _amountController,
                       keyboardType: TextInputType.number,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                      decoration: InputDecoration(
-                        hintText: 'e.g. $minAmount',
-                        prefixIcon: const Icon(Icons.payments_outlined, color: Color(0xFF94A3B8)),
-                      ),
+                      hintText: 'e.g. $minAmount',
+                      prefixIcon: const Icon(Icons.payments_outlined, color: Color(0xFF94A3B8)),
                     ),
-                    const SizedBox(height: 36),
+                    const SizedBox(height: 20),
+
+                    // Proof of Transfer Attachment
+                    Text(
+                      'Attach Proof of Payment (Screenshot / SMS Receipt)',
+                      style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_proofFile != null)
+                      ClayContainer(
+                        depth: 6,
+                        cornerRadius: 16,
+                        padding: const EdgeInsets.all(12),
+                        color: isDark ? const Color(0xFF1E283C) : const Color(0xFFF1F5F9),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.file(
+                                File(_proofFile!.path),
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _proofFile!.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(color: titleCol, fontWeight: FontWeight.w600, fontSize: 13),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  const Text('Proof attached successfully', style: TextStyle(color: Color(0xFF10B981), fontSize: 11)),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, color: Color(0xFFEF4444)),
+                              onPressed: () => setState(() => _proofFile = null),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ClayContainer(
+                        depth: 6,
+                        cornerRadius: 16,
+                        onTap: _pickProofImage,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        color: isDark ? const Color(0xFF1E283C) : const Color(0xFFF1F5F9),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_a_photo_rounded, color: primaryColor, size: 20),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Upload Screenshot / Receipt',
+                              style: TextStyle(color: primaryColor, fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 20),
+
+                    // Optional Transfer Reference / SMS ID
+                    Text(
+                      'SMS Reference / Transaction ID (Optional)',
+                      style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    ClayTextField(
+                      controller: _referenceController,
+                      hintText: 'e.g. TXN-99887766',
+                      prefixIcon: const Icon(Icons.receipt_long_rounded, color: Color(0xFF94A3B8)),
+                    ),
+                    const SizedBox(height: 32),
 
                     // Submit Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: specProvider.isLoading ? null : _submitRequest,
-                        child: specProvider.isLoading
-                            ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                            : const Text('Submit Transfer Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      ),
+                    ClayButton(
+                      text: 'Submit Transfer Request',
+                      icon: Icons.currency_exchange_rounded,
+                      isLoading: specProvider.isLoading,
+                      onPressed: specProvider.isLoading ? null : _submitRequest,
                     ),
                   ],
                 ),
@@ -336,16 +503,18 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
     VoidCallback? onCopy,
   }) {
     final primaryColor = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleCol = Theme.of(context).colorScheme.onSurface;
+    final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
+        ClayContainer(
+          borderRadius: 20,
+          depth: 4,
+          color: primaryColor.withValues(alpha: 0.15),
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: primaryColor.withValues(alpha: 0.15),
-            shape: BoxShape.circle,
-          ),
           child: Text(
             step,
             style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 12),
@@ -358,21 +527,21 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                style: TextStyle(color: titleCol, fontWeight: FontWeight.bold, fontSize: 13),
               ),
               const SizedBox(height: 2),
               Text(
                 desc,
-                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, height: 1.3),
+                style: TextStyle(color: subCol, fontSize: 12, height: 1.3),
               ),
               if (codeSnippet != null) ...[
                 const SizedBox(height: 6),
-                Container(
+                ClayContainer(
+                  borderRadius: 10,
+                  depth: 6,
+                  isRecessed: true,
+                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [

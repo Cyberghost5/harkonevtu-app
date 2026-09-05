@@ -4,6 +4,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/app_config_provider.dart';
 import '../core/storage/secure_storage_service.dart';
 import '../models/app_config_model.dart';
+import 'widgets/clay_container.dart';
+import 'widgets/clay_button.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onFinishOnboarding;
@@ -47,45 +49,63 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final configProvider = Provider.of<AppConfigProvider>(context);
     final slides = configProvider.config?.onboardingSlides ?? [];
     final primaryColor = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // Top Bar with Skip Button
+            // Top Bar with 3D Logo Badge & 3D Skip Button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      if (configProvider.config?.logo1Url != null &&
-                          configProvider.config!.logo1Url!.isNotEmpty)
-                        CachedNetworkImage(
-                          imageUrl: configProvider.config!.logo1Url!,
-                          height: 32,
-                          errorWidget: (_, _, _) => const Icon(Icons.bolt, color: Colors.white),
-                        )
-                      else
-                        Icon(Icons.bolt_rounded, color: primaryColor, size: 32),
-                      const SizedBox(width: 8),
+                      ClayContainer(
+                        depth: 10,
+                        cornerRadius: 50,
+                        color: primaryColor.withValues(alpha: 0.15),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: configProvider.config?.logo1Url != null &&
+                                  configProvider.config!.logo1Url!.isNotEmpty
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(50),
+                                  child: CachedNetworkImage(
+                                    imageUrl: configProvider.config!.logo1Url!,
+                                    height: 24,
+                                    width: 24,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (_, _, _) => Icon(Icons.bolt_rounded, color: primaryColor, size: 24),
+                                  ),
+                                )
+                              : Icon(Icons.bolt_rounded, color: primaryColor, size: 24),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       Text(
                         configProvider.appName,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
                             ),
                       ),
                     ],
                   ),
-                  TextButton(
-                    onPressed: _onDone,
+                  ClayButton(
+                    height: 36,
+                    width: 76,
+                    depth: 8,
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                    onTap: _onDone,
                     child: Text(
                       'Skip',
                       style: TextStyle(
-                        color: const Color(0xFF94A3B8),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
                     ),
                   ),
@@ -105,7 +125,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
                 itemBuilder: (context, index) {
                   final slide = slides[index];
-                  return _buildSlideCard(slide, index, primaryColor);
+                  return _buildSlideCard(slide, index, primaryColor, isDark);
                 },
               ),
             ),
@@ -115,48 +135,66 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 children: [
-                  // Indicators
+                  // 3D Clay Indicators
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(
                       slides.length,
-                      (index) => AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        height: 8,
-                        width: _currentIndex == index ? 28 : 8,
-                        decoration: BoxDecoration(
-                          color: _currentIndex == index
-                              ? primaryColor
-                              : const Color(0xFF334155),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
+                      (index) {
+                        final isSelected = _currentIndex == index;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: ClayContainer(
+                            depth: isSelected ? 8 : 4,
+                            cornerRadius: 10,
+                            color: isSelected
+                                ? primaryColor
+                                : (isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              height: 10,
+                              width: isSelected ? 32 : 10,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 32),
 
-                  // Next / Get Started Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (_currentIndex < slides.length - 1) {
-                          _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        } else {
-                          _onDone();
-                        }
-                      },
-                      child: Text(
-                        _currentIndex == slides.length - 1 ? 'Get Started' : 'Next',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                  // Next / Get Started Button (3D ClayButton)
+                  ClayButton(
+                    height: 54,
+                    depth: 14,
+                    color: primaryColor,
+                    onTap: () {
+                      if (_currentIndex < slides.length - 1) {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      } else {
+                        _onDone();
+                      }
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _currentIndex == slides.length - 1 ? 'Get Started' : 'Next',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          _currentIndex == slides.length - 1 ? Icons.rocket_launch_rounded : Icons.arrow_forward_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -168,41 +206,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildSlideCard(OnboardingSlideModel slide, int index, Color primaryColor) {
+  Widget _buildSlideCard(OnboardingSlideModel slide, int index, Color primaryColor, bool isDark) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Illustration / Image Container
-          Container(
-            height: 240,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: primaryColor.withValues(alpha: 0.25),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: primaryColor.withValues(alpha: 0.15),
-                  blurRadius: 24,
-                  spreadRadius: 2,
-                ),
-              ],
+          // Illustration / Image Container (3D Clay)
+          ClayContainer(
+            depth: 16,
+            cornerRadius: 28,
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+            child: Container(
+              height: 240,
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              child: slide.imageUrl != null && slide.imageUrl!.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: CachedNetworkImage(
+                        imageUrl: slide.imageUrl!,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, _, _) => _buildFallbackIllustration(index, primaryColor),
+                      ),
+                    )
+                  : _buildFallbackIllustration(index, primaryColor),
             ),
-            child: slide.imageUrl != null && slide.imageUrl!.isNotEmpty
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: CachedNetworkImage(
-                      imageUrl: slide.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, _, _) => _buildFallbackIllustration(index, primaryColor),
-                    ),
-                  )
-                : _buildFallbackIllustration(index, primaryColor),
           ),
           const SizedBox(height: 40),
 
@@ -211,7 +240,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             slide.title,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
             textAlign: TextAlign.center,
           ),
@@ -221,7 +250,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Text(
             slide.description,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF94A3B8),
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                   height: 1.5,
                   fontSize: 15,
                 ),
@@ -234,18 +263,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildFallbackIllustration(int index, Color primaryColor) {
     return Center(
-      child: Container(
-        padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: primaryColor.withValues(alpha: 0.12),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          _getSlideIcon(index),
-          size: 72,
-          color: primaryColor,
+      child: ClayContainer(
+        depth: 12,
+        cornerRadius: 50,
+        color: primaryColor.withValues(alpha: 0.15),
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Icon(
+            _getSlideIcon(index),
+            size: 72,
+            color: primaryColor,
+          ),
         ),
       ),
     );
   }
 }
+
+

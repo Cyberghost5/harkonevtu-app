@@ -9,6 +9,7 @@ import '../../providers/app_config_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../core/utils/formatters.dart';
 import '../widgets/receipt_modal.dart';
+import '../widgets/notification_modal.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
@@ -127,12 +128,34 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                           ],
                         ),
                       ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.notifications_none_rounded,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                        onPressed: () {},
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              Icons.notifications_none_rounded,
+                              color: Theme.of(context).colorScheme.onSurface,
+                              size: 26,
+                            ),
+                            onPressed: () => NotificationModal.show(context),
+                          ),
+                          Positioned(
+                            right: 8,
+                            top: 8,
+                            child: Container(
+                              width: 9,
+                              height: 9,
+                              decoration: BoxDecoration(
+                                color: primaryColor,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Theme.of(context).cardColor,
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -225,10 +248,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                 const SizedBox(height: 28),
 
                 // Quick Services Section Header
-                const Text(
+                Text(
                   'Quick Services',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -243,10 +266,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Recent Transactions',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -485,6 +508,10 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
   void _showBvnModal(BuildContext context, DashboardProvider dashboardProvider) {
     final bvnController = TextEditingController();
     final primaryColor = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final modalBg = Theme.of(context).cardColor;
+    final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     showModalBottomSheet(
       context: context,
@@ -501,9 +528,9 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
               ),
               child: Container(
                 padding: const EdgeInsets.all(24),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF151C2C),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                decoration: BoxDecoration(
+                  color: modalBg,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -511,27 +538,28 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                   children: [
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: primaryColor.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
+                        ClayContainer(
+                          depth: 10,
+                          cornerRadius: 50,
+                          color: primaryColor.withValues(alpha: 0.15),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Icon(Icons.shield_outlined, color: primaryColor, size: 28),
                           ),
-                          child: Icon(Icons.shield_outlined, color: primaryColor, size: 28),
                         ),
                         const SizedBox(width: 14),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'Generate Virtual Account',
-                                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                style: TextStyle(color: titleColor, fontSize: 18, fontWeight: FontWeight.bold),
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
                                 'CBN Verification Requirement',
-                                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                                style: TextStyle(color: subColor, fontSize: 12),
                               ),
                             ],
                           ),
@@ -539,69 +567,62 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Please enter your 11-digit Bank Verification Number (BVN) to create your dedicated bank account for instant wallet funding.',
-                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                      style: TextStyle(color: subColor, fontSize: 13),
                     ),
                     const SizedBox(height: 20),
-                    TextFormField(
+                    ClayTextField(
                       controller: bvnController,
                       keyboardType: TextInputType.number,
                       maxLength: 11,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 2.0),
-                      decoration: const InputDecoration(
-                        labelText: 'Enter 11-Digit BVN',
-                        prefixIcon: Icon(Icons.fingerprint_rounded, color: Color(0xFF94A3B8)),
-                        counterText: '',
-                      ),
+                      labelText: 'Enter 11-Digit BVN',
+                      prefixIcon: Icons.fingerprint_rounded,
                     ),
                     const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: isSubmitting
-                            ? null
-                            : () async {
-                                final bvn = bvnController.text.trim();
-                                if (bvn.length != 11) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('BVN must be exactly 11 digits.'),
-                                      backgroundColor: Color(0xFFEF4444),
-                                    ),
-                                  );
-                                  return;
-                                }
+                    ClayButton(
+                      height: 52,
+                      depth: 12,
+                      color: primaryColor,
+                      isLoading: isSubmitting,
+                      onTap: () async {
+                        final bvn = bvnController.text.trim();
+                        if (bvn.length != 11) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('BVN must be exactly 11 digits.'),
+                              backgroundColor: Color(0xFFEF4444),
+                            ),
+                          );
+                          return;
+                        }
 
-                                setModalState(() => isSubmitting = true);
-                                final response = await dashboardProvider.generateDva(bvn);
+                        setModalState(() => isSubmitting = true);
+                        final response = await dashboardProvider.generateDva(bvn);
 
-                                if (!context.mounted) return;
+                        if (!context.mounted) return;
 
-                                if (response.status) {
-                                  Navigator.pop(context);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(response.message.isNotEmpty
-                                          ? response.message
-                                          : 'Virtual Bank Account generated successfully!'),
-                                      backgroundColor: const Color(0xFF10B981),
-                                    ),
-                                  );
-                                } else {
-                                  setModalState(() => isSubmitting = false);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(response.message),
-                                      backgroundColor: const Color(0xFFEF4444),
-                                    ),
-                                  );
-                                }
-                              },
-                        child: isSubmitting
-                            ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                            : const Text('Submit BVN & Generate Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      ),
+                        if (response.status) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(response.message.isNotEmpty
+                                  ? response.message
+                                  : 'Virtual Bank Account generated successfully!'),
+                              backgroundColor: const Color(0xFF10B981),
+                            ),
+                          );
+                        } else {
+                          setModalState(() => isSubmitting = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(response.message),
+                              backgroundColor: const Color(0xFFEF4444),
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Submit BVN & Generate Account', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),

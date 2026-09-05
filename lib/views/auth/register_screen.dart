@@ -6,6 +6,10 @@ import '../../providers/app_config_provider.dart';
 import 'login_screen.dart';
 import 'otp_verification_screen.dart';
 
+import '../widgets/clay_container.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/clay_text_field.dart';
+
 class RegisterScreen extends StatefulWidget {
   final Function(Widget) onNavigate;
   final VoidCallback? onLoginSuccess;
@@ -99,6 +103,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final configProvider = Provider.of<AppConfigProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final appTitle = configProvider.appName.isNotEmpty ? configProvider.appName : 'Us';
 
     return Scaffold(
@@ -117,107 +122,104 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Center(
+                  child: ClayContainer(
+                    borderRadius: 60,
+                    depth: 14,
+                    padding: const EdgeInsets.all(20),
+                    color: isDark ? const Color(0xFF1B2436) : Colors.white,
+                    child: Icon(Icons.person_add_rounded, size: 48, color: primaryColor),
+                  ),
+                ),
+                const SizedBox(height: 20),
                 Text(
                   'Join $appTitle',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Fill in your details to create your secure wallet account',
-                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 28),
 
                 // Full Name
-                TextFormField(
+                ClayTextField(
                   controller: _nameController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Full Name',
-                    prefixIcon: Icon(Icons.badge_outlined, color: Color(0xFF94A3B8)),
-                  ),
+                  labelText: 'Full Name',
+                  prefixIcon: const Icon(Icons.badge_outlined, color: Color(0xFF94A3B8)),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Enter your full name' : null,
                 ),
                 const SizedBox(height: 16),
 
                 // Username
-                TextFormField(
+                ClayTextField(
                   controller: _usernameController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Username',
-                    prefixIcon: Icon(Icons.alternate_email_rounded, color: Color(0xFF94A3B8)),
-                  ),
+                  labelText: 'Username',
+                  prefixIcon: const Icon(Icons.alternate_email_rounded, color: Color(0xFF94A3B8)),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Enter a username' : null,
                 ),
                 const SizedBox(height: 16),
 
                 // Email
-                TextFormField(
+                ClayTextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Email Address',
-                    prefixIcon: Icon(Icons.email_outlined, color: Color(0xFF94A3B8)),
-                  ),
+                  labelText: 'Email Address',
+                  prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF94A3B8)),
                   validator: (v) => v == null || !v.contains('@') ? 'Enter a valid email' : null,
                 ),
                 const SizedBox(height: 16),
 
                 // Phone
-                TextFormField(
+                ClayTextField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Phone Number',
-                    prefixIcon: Icon(Icons.phone_outlined, color: Color(0xFF94A3B8)),
-                  ),
+                  labelText: 'Phone Number',
+                  prefixIcon: const Icon(Icons.phone_outlined, color: Color(0xFF94A3B8)),
                   validator: (v) => v == null || v.trim().length < 10 ? 'Enter a valid phone number' : null,
                 ),
                 const SizedBox(height: 16),
 
                 // Password
-                TextFormField(
+                ClayTextField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF94A3B8)),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        color: const Color(0xFF94A3B8),
-                      ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  labelText: 'Password',
+                  prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF94A3B8)),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: const Color(0xFF94A3B8),
                     ),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
                   validator: (v) => v == null || v.length < 6 ? 'Password must be at least 6 characters' : null,
                 ),
                 const SizedBox(height: 16),
 
                 // Referral Code (Optional)
-                TextFormField(
+                ClayTextField(
                   controller: _referralController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Referral Code (Optional)',
-                    prefixIcon: Icon(Icons.card_giftcard_rounded, color: Color(0xFF94A3B8)),
-                  ),
+                  labelText: 'Referral Code (Optional)',
+                  prefixIcon: const Icon(Icons.card_giftcard_rounded, color: Color(0xFF94A3B8)),
                 ),
                 const SizedBox(height: 32),
 
                 // Submit Button
-                ElevatedButton(
+                ClayButton(
+                  text: 'Create Account',
+                  icon: Icons.person_add_rounded,
+                  isLoading: authProvider.isLoading,
                   onPressed: authProvider.isLoading ? null : _handleRegister,
-                  child: authProvider.isLoading
-                      ? const SpinKitThreeBounce(color: Colors.white, size: 20)
-                      : const Text('Create Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
 
                 const SizedBox(height: 24),

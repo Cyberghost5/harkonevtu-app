@@ -108,16 +108,23 @@ class SpecializedProvider extends ChangeNotifier {
     required String network,
     required String phone,
     required double amount,
+    String? proofPath,
+    String? reference,
   }) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      final response = await _apiClient.post('/airtime-to-cash/submit', data: {
+      final payload = <String, dynamic>{
         'network': network.toLowerCase(),
         'phone': phone,
         'amount': amount,
-      });
+        if (reference != null && reference.isNotEmpty) 'reference': reference,
+        if (proofPath != null && proofPath.isNotEmpty) 'proof_image': proofPath,
+        if (proofPath != null && proofPath.isNotEmpty) 'proof': proofPath,
+      };
+
+      final response = await _apiClient.post('/airtime-to-cash/submit', data: payload);
 
       _isLoading = false;
       notifyListeners();

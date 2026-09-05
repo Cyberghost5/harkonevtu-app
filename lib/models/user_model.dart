@@ -55,6 +55,9 @@ class UserModel {
   final String? referralCode;
   final String? kycStatus;
   final String? avatar;
+  final String? bankName;
+  final String? bankAccountNumber;
+  final String? bankAccountName;
   final WalletModel? wallet;
 
   UserModel({
@@ -68,6 +71,9 @@ class UserModel {
     this.referralCode,
     this.kycStatus,
     this.avatar,
+    this.bankName,
+    this.bankAccountNumber,
+    this.bankAccountName,
     this.wallet,
   });
 
@@ -111,6 +117,9 @@ class UserModel {
       referralCode: json['referral_code']?.toString() ?? json['ref_code']?.toString(),
       kycStatus: json['kyc_status']?.toString(),
       avatar: json['avatar']?.toString() ?? json['profile_photo_url']?.toString() ?? json['avatar_url']?.toString() ?? json['profile_picture']?.toString(),
+      bankName: json['bank_name']?.toString(),
+      bankAccountNumber: json['bank_account_number']?.toString(),
+      bankAccountName: json['bank_account_name']?.toString(),
       wallet: json['wallet'] != null && json['wallet'] is Map<String, dynamic>
           ? WalletModel.fromJson(json['wallet'] as Map<String, dynamic>)
           : null,
@@ -129,6 +138,9 @@ class UserModel {
       'referral_code': referralCode,
       'kyc_status': kycStatus,
       'avatar': avatar,
+      'bank_name': bankName,
+      'bank_account_number': bankAccountNumber,
+      'bank_account_name': bankAccountName,
       'wallet': wallet?.toJson(),
     };
   }
