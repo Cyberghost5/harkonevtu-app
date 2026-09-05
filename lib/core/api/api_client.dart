@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../storage/secure_storage_service.dart';
+import 'api_constants.dart';
 
 class ApiResponse {
   final bool status;
@@ -35,7 +36,7 @@ class ApiClient {
   ApiClient._internal() {
     _dio = Dio(
       BaseOptions(
-        baseUrl: 'https://nmilleniumresource.com.ng/api/v1',
+        baseUrl: ApiConstants.baseUrl,
         connectTimeout: const Duration(seconds: 20),
         receiveTimeout: const Duration(seconds: 20),
         headers: {

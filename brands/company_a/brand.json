@@ -1,0 +1,7 @@
+{
+  "brand_id": "company_a",
+  "app_name": "Company A VTU",
+  "package_name": "com.companya.vtu",
+  "base_url": "https://companya.com/api/v1",
+  "git_branch": "brand/company_a"
+}

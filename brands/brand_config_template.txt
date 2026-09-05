@@ -1,0 +1,64 @@
+================================================================================
+🏷️ WHITELABEL BRAND CONFIGURATION TEMPLATE (brand.json)
+================================================================================
+
+Save this content inside: brands/<your_brand_id>/brand.json
+
+--------------------------------------------------------------------------------
+1. JSON TEMPLATE (Copy & Paste):
+--------------------------------------------------------------------------------
+
+{
+  "brand_id": "company_a",
+  "app_name": "Company A VTU",
+  "package_name": "com.companya.vtu",
+  "base_url": "https://companya.com/api/v1",
+  "git_branch": "brand/company_a",
+  "key_alias": "companya_alias",
+  "store_password": "supersecretstorepassword123",
+  "key_password": "supersecretkeypassword123"
+}
+
+
+--------------------------------------------------------------------------------
+2. FIELD DESCRIPTIONS:
+--------------------------------------------------------------------------------
+
+• brand_id       : (Required) Folder name inside brands/ (lowercase, no spaces).
+                   Example: "company_a" or "acme_telecom"
+
+• app_name       : (Required) The official app display name under the phone icon
+                   and on top app header bar.
+                   Example: "Company A VTU"
+
+• package_name   : (Required) Unique Android applicationId / Package ID.
+                   Must be unique for Google Play Store listing.
+                   Example: "com.companya.vtu"
+
+• base_url       : (Required) Target REST API base URL for this company's server.
+                   Example: "https://companya.com/api/v1"
+
+• git_branch     : (Optional) The dedicated GitHub branch for this company.
+                   Defaults to "brand/<brand_id>" if omitted.
+                   Example: "brand/company_a"
+
+• key_alias      : (Optional) Alias used for Android JKS release signing key.
+                   Example: "companya_alias"
+
+• store_password : (Optional) Secret password for the Android JKS keystore file.
+                   Example: "supersecretstorepassword123"
+
+• key_password   : (Optional) Secret password for the Android key entry.
+                   Example: "supersecretkeypassword123"
+
+
+--------------------------------------------------------------------------------
+3. COMMAND EXAMPLES:
+--------------------------------------------------------------------------------
+
+# Generate keystore + commit + push branch to GitHub (Local system):
+dart run tool/build_brand.dart company_a --gen-key --push
+
+# Build release APK + AAB binaries (VPS build server):
+dart run tool/build_brand.dart company_a --build
+================================================================================

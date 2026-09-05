@@ -1,0 +1,7 @@
+{
+  "brand_id": "default",
+  "app_name": "NMillenium",
+  "package_name": "com.harkonedesigns.nmilleniumresource",
+  "base_url": "https://nmilleniumresource.com.ng/api/v1",
+  "git_branch": "main"
+}
