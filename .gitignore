@@ -47,9 +47,16 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 
-# Android Keystore & Secrets
-**/key.properties
+# Android Keystore & Secrets (Ignore root runtime files, track brand files)
 android/key.properties
 android/app/key.properties
+android/app/*.jks
+android/app/*.keystore
 *.jks
 *.keystore
+**/key.properties
+
+# Allow brand configuration keystores in brands/ folder
+!brands/**/key.properties
+!brands/**/*.jks
+!brands/**/*.keystore

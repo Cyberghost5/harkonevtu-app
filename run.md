@@ -80,10 +80,10 @@ To build for a specific brand (e.g. `acme_vtu`):
 git fetch origin
 
 # 2. Switch to the brand branch
-git checkout brand/acme_vtu
+git checkout brand/tincitybill
 
 # 3. Pull latest branch code
-git pull origin brand/acme_vtu
+git pull origin brand/tincitybill
 
 # 4. Install Flutter packages
 flutter pub get

@@ -56,7 +56,7 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             } else {
-                signingConfig = signingConfigs.getByName("debug")
+                throw GradleException("Release build error: android/key.properties was not found. Ensure key.properties and your brand JKS keystore exist.")
             }
         }
     }
