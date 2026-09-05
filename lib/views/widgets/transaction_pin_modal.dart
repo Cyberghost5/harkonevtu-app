@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/storage/secure_storage_service.dart';
+import 'clay_container.dart';
+import 'clay_button.dart';
 
 class TransactionPinModal extends StatefulWidget {
   final String title;
@@ -171,58 +173,60 @@ class _TransactionPinModalState extends State<TransactionPinModal> {
           ),
           const SizedBox(height: 24),
 
-          // 4-digit PIN row
+          // 4-digit PIN row (Recessed 3D Clay Sockets)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(4, (index) {
               return Container(
-                width: 50,
-                height: 56,
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                child: TextFormField(
-                  controller: _controllers[index],
-                  focusNode: _focusNodes[index],
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  maxLength: 1,
-                  obscureText: true,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: titleCol),
-                  decoration: InputDecoration(
-                    counterText: '',
-                    contentPadding: EdgeInsets.zero,
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: subCol.withValues(alpha: 0.3)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: primaryColor, width: 2),
+                width: 52,
+                height: 58,
+                margin: const EdgeInsets.symmetric(horizontal: 6),
+                child: ClayContainer(
+                  borderRadius: 14,
+                  depth: 6,
+                  isRecessed: true,
+                  child: Center(
+                    child: TextFormField(
+                      controller: _controllers[index],
+                      focusNode: _focusNodes[index],
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      maxLength: 1,
+                      obscureText: true,
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: titleCol),
+                      decoration: const InputDecoration(
+                        counterText: '',
+                        contentPadding: EdgeInsets.zero,
+                        border: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                      ),
+                      onChanged: (val) {
+                        if (val.isNotEmpty && index < 3) {
+                          _focusNodes[index + 1].requestFocus();
+                        } else if (val.isEmpty && index > 0) {
+                          _focusNodes[index - 1].requestFocus();
+                        }
+                        if (_getPin().length == 4) {
+                          _handleConfirm();
+                        }
+                      },
                     ),
                   ),
-                  onChanged: (val) {
-                    if (val.isNotEmpty && index < 3) {
-                      _focusNodes[index + 1].requestFocus();
-                    } else if (val.isEmpty && index > 0) {
-                      _focusNodes[index - 1].requestFocus();
-                    }
-                    if (_getPin().length == 4) {
-                      _handleConfirm();
-                    }
-                  },
                 ),
               );
             }),
           ),
           const SizedBox(height: 24),
 
-          // Confirm & Pay Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _handleConfirm,
-              child: const Text('Confirm & Pay', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            ),
+          // 3D Pressable Clay Confirm & Pay Button
+          ClayButton(
+            text: 'Confirm & Pay',
+            icon: Icons.check_circle_outline_rounded,
+            onPressed: _handleConfirm,
+            depth: 10,
           ),
+
 
           // Biometrics Fingerprint Button (if available & enabled)
           if (showBiometricOption) ...[

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/transaction_model.dart';
 import '../../core/utils/formatters.dart';
+import 'clay_button.dart';
+import 'clay_container.dart';
 
 class ReceiptModal extends StatelessWidget {
   final TransactionModel transaction;
@@ -132,17 +134,14 @@ class ReceiptModal extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // Close button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-              ),
-              child: const Text('Close Receipt', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
+          // 3D Pressable Clay Close Button
+          ClayButton(
+            text: 'Close Receipt',
+            icon: Icons.check_circle_outline_rounded,
+            onPressed: () => Navigator.pop(context),
+            depth: 8,
           ),
+
         ],
       ),
     );
