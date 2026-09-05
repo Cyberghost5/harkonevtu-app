@@ -726,7 +726,11 @@ class _ProfileViewState extends State<ProfileView> {
                   height: 52,
                   depth: 12,
                   color: Theme.of(ctx).primaryColor,
-                  onTap: () {
+                  onTap: () async {
+                    if (oldPasswordController.text.trim().isEmpty) {
+                      _showSnackBar('Please enter your current password.', isError: true);
+                      return;
+                    }
                     if (newPasswordController.text.length < 6) {
                       _showSnackBar('New password must be at least 6 characters.', isError: true);
                       return;
@@ -735,8 +739,14 @@ class _ProfileViewState extends State<ProfileView> {
                       _showSnackBar('New passwords do not match.', isError: true);
                       return;
                     }
+                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                    final response = await authProvider.changePassword(
+                      currentPassword: oldPasswordController.text.trim(),
+                      newPassword: newPasswordController.text.trim(),
+                      confirmPassword: confirmPasswordController.text.trim(),
+                    );
                     Navigator.pop(ctx);
-                    _showSnackBar('Password change request submitted successfully!');
+                    _showSnackBar(response.message, isError: !response.status);
                   },
                   child: const Text('Update Password', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
@@ -749,6 +759,7 @@ class _ProfileViewState extends State<ProfileView> {
   }
 
   void _showTransactionPinModal() {
+    final oldPinController = TextEditingController();
     final pinController = TextEditingController();
     final confirmPinController = TextEditingController();
 
@@ -777,11 +788,20 @@ class _ProfileViewState extends State<ProfileView> {
                     style: TextStyle(color: titleColor, fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
                 ClayTextField(
+                  controller: oldPinController,
+                  keyboardType: TextInputType.number,
+                  obscureText: true,
+                  maxLength: 4,
+                  labelText: 'Current PIN (if set)',
+                  prefixIcon: const Icon(Icons.pin_outlined, color: Color(0xFF94A3B8)),
+                ),
+                const SizedBox(height: 8),
+                ClayTextField(
                   controller: pinController,
                   keyboardType: TextInputType.number,
                   obscureText: true,
                   maxLength: 4,
-                  labelText: '4-Digit Transaction PIN',
+                  labelText: 'New 4-Digit Transaction PIN',
                   prefixIcon: const Icon(Icons.pin_rounded, color: Color(0xFF94A3B8)),
                 ),
                 const SizedBox(height: 8),
@@ -790,7 +810,7 @@ class _ProfileViewState extends State<ProfileView> {
                   keyboardType: TextInputType.number,
                   obscureText: true,
                   maxLength: 4,
-                  labelText: 'Confirm 4-Digit PIN',
+                  labelText: 'Confirm New 4-Digit PIN',
                   prefixIcon: const Icon(Icons.pin_outlined, color: Color(0xFF94A3B8)),
                 ),
                 const SizedBox(height: 20),
@@ -798,7 +818,7 @@ class _ProfileViewState extends State<ProfileView> {
                   height: 52,
                   depth: 12,
                   color: Theme.of(ctx).primaryColor,
-                  onTap: () {
+                  onTap: () async {
                     if (pinController.text.length != 4) {
                       _showSnackBar('PIN must be exactly 4 digits.', isError: true);
                       return;
@@ -807,9 +827,14 @@ class _ProfileViewState extends State<ProfileView> {
                       _showSnackBar('Transaction PINs do not match.', isError: true);
                       return;
                     }
-                    SecureStorageService().savePin(pinController.text.trim());
+                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                    final response = await authProvider.updatePin(
+                      currentPin: oldPinController.text.trim(),
+                      newPin: pinController.text.trim(),
+                      confirmPin: confirmPinController.text.trim(),
+                    );
                     Navigator.pop(ctx);
-                    _showSnackBar('Transaction PIN updated successfully!');
+                    _showSnackBar(response.message, isError: !response.status);
                   },
                   child: const Text('Save Transaction PIN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                 ),

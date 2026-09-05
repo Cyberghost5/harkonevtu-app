@@ -92,6 +92,17 @@ class ApiClient {
     }
   }
 
+  Future<ApiResponse> put(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
+    try {
+      final response = await _dio.put(path, data: data, queryParameters: queryParameters);
+      return _parseResponse(response);
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse(status: false, message: e.toString());
+    }
+  }
+
   Future<ApiResponse> delete(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
     try {
       final response = await _dio.delete(path, data: data, queryParameters: queryParameters);

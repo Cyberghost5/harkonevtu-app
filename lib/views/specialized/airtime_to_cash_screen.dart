@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
 import '../widgets/clay_text_field.dart';
+import '../widgets/transaction_pin_modal.dart';
 
 class AirtimeToCashScreen extends StatefulWidget {
   const AirtimeToCashScreen({super.key});
@@ -129,7 +130,7 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
     );
   }
 
-  void _submitRequest() async {
+  void _submitRequest() {
     final phone = _phoneController.text.trim();
     final amountText = _amountController.text.trim();
     final amount = double.tryParse(amountText) ?? 0.0;
@@ -149,12 +150,30 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
       return;
     }
 
+    final currencySymbol = Provider.of<AppConfigProvider>(context, listen: false).currencySymbol;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => TransactionPinModal(
+        title: 'Airtime to Cash Request',
+        amountText: '$currencySymbol${amount.toStringAsFixed(2)}',
+        onPinConfirmed: (pin) => _executeSubmission(phone, amount, reference, pin),
+      ),
+    );
+  }
+
+  void _executeSubmission(String phone, double amount, String reference, String pin) async {
+    final specProvider = Provider.of<SpecializedProvider>(context, listen: false);
+
     final response = await specProvider.submitAirtimeToCash(
       network: _selectedNetwork,
       phone: phone,
       amount: amount,
       proofPath: _proofFile?.path,
       reference: reference.isNotEmpty ? reference : null,
+      pin: pin,
     );
 
     if (!mounted) return;
@@ -178,6 +197,12 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
           backgroundColor: const Color(0xFFEF4444),
         ),
       );
+      final msg = response.message.toLowerCase();
+      if (msg.contains('pin') || msg.contains('incorrect') || msg.contains('invalid')) {
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (mounted) _submitRequest();
+        });
+      }
     }
   }
 

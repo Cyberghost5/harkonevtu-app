@@ -288,22 +288,24 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<ApiResponse> updateProfile({required String name, required String phone}) async {
+  Future<ApiResponse> updateProfile({
+    required String name,
+    required String phone,
+    String? email,
+  }) async {
     _isLoading = true;
     notifyListeners();
 
     try {
       final payload = {
         'name': name.trim(),
+        'email': (email ?? _user?.email ?? '').trim(),
         'phone': phone.trim(),
       };
 
-      var response = await _apiClient.post('/user/profile/update', data: payload);
+      var response = await _apiClient.put('/user/profile', data: payload);
       if (!response.status) {
         response = await _apiClient.post('/user/profile', data: payload);
-      }
-      if (!response.status) {
-        response = await _apiClient.post('/auth/profile', data: payload);
       }
 
       if (response.status) {
@@ -317,6 +319,80 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return ApiResponse(status: false, message: 'Failed to update profile.');
+    }
+  }
+
+  Future<ApiResponse> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final payload = {
+        'current_password': currentPassword,
+        'password': newPassword,
+        'password_confirmation': confirmPassword,
+      };
+
+      var response = await _apiClient.put('/user/password', data: payload);
+      if (!response.status) {
+        response = await _apiClient.post('/user/password', data: payload);
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return response;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return ApiResponse(status: false, message: 'Failed to update password.');
+    }
+  }
+
+  Future<ApiResponse> updatePin({
+    String? currentPin,
+    required String newPin,
+    required String confirmPin,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final payload = {
+        if (currentPin != null && currentPin.isNotEmpty) 'current_pin': currentPin,
+        'pin': newPin,
+        'pin_confirmation': confirmPin,
+      };
+
+      var response = await _apiClient.put('/user/pin', data: payload);
+      if (!response.status) {
+        response = await _apiClient.post('/user/pin', data: payload);
+      }
+
+      if (response.status) {
+        await _storage.savePin(newPin);
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return response;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return ApiResponse(status: false, message: 'Failed to update transaction PIN.');
+    }
+  }
+
+  Future<ApiResponse> verifyPin({required String pin}) async {
+    try {
+      final payload = {'pin': pin.trim()};
+      final response = await _apiClient.post('/user/pin/verify', data: payload);
+      return response;
+    } catch (e) {
+      return ApiResponse(status: false, message: 'PIN verification failed.');
     }
   }
 
@@ -380,10 +456,9 @@ class AuthProvider extends ChangeNotifier {
         'bank_account_name': accountName.trim(),
       };
 
-      // ApiClient get / post / put
-      var response = await _apiClient.post('/user/bank', data: payload);
+      var response = await _apiClient.put('/user/bank', data: payload);
       if (!response.status) {
-        response = await _apiClient.post('/user/account/bank', data: payload);
+        response = await _apiClient.post('/user/bank', data: payload);
       }
 
       if (response.status) {
@@ -440,13 +515,24 @@ class AuthProvider extends ChangeNotifier {
         if (dob != null && dob.isNotEmpty) 'dob': dob.trim(),
       };
 
-      var response = await _apiClient.post('/user/kyc/submit', data: payload);
+      var response = await _apiClient.post('/user/dva/generate', data: {'bvn': bvn.trim()});
       if (!response.status) {
-        response = await _apiClient.post('/user/kyc', data: payload);
+        response = await _apiClient.post('/user/kyc/submit', data: payload);
       }
-      if (!response.status) {
-        response = await _apiClient.post('/user/dva/generate', data: {'bvn': bvn.trim()});
+
+      if (response.status) {
+        await fetchProfile();
       }
+
+      _isLoading = false;
+      notifyListeners();
+      return response;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return ApiResponse(status: false, message: 'KYC submission failed. Please check your BVN/NIN details.');
+    }
+  }
 
       if (response.status) {
         await fetchProfile();

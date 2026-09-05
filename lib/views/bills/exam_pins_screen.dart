@@ -26,17 +26,34 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
   int _selectedExamIndex = 0;
   int _quantity = 1;
 
-  final List<Map<String, dynamic>> _examTypes = [
-    {'id': 1, 'name': 'WAEC Result Checker', 'price': 3600.0, 'code': 'waec', 'color': const Color(0xFF3B82F6)},
-    {'id': 2, 'name': 'NECO Result Token', 'price': 1200.0, 'code': 'neco', 'color': const Color(0xFF10B981)},
-    {'id': 3, 'name': 'NABTEB Result Checker', 'price': 1000.0, 'code': 'nabteb', 'color': const Color(0xFFF59E0B)},
+  final List<Map<String, dynamic>> _fallbackExamTypes = [
+    {'id': 1, 'name': 'WAEC Result Checker PIN', 'price': 3600.0, 'code': 'waec', 'color': const Color(0xFF3B82F6)},
+    {'id': 2, 'name': 'NECO Result Checker PIN', 'price': 1400.0, 'code': 'neco', 'color': const Color(0xFF10B981)},
+    {'id': 3, 'name': 'NABTEB Result Checker PIN', 'price': 1000.0, 'code': 'nabteb', 'color': const Color(0xFFF59E0B)},
   ];
+
+  List<Map<String, dynamic>> _getExamTypes(BillsProvider billsProvider) {
+    if (billsProvider.examTypes.isNotEmpty) {
+      final colors = [const Color(0xFF3B82F6), const Color(0xFF10B981), const Color(0xFFF59E0B), const Color(0xFF8B5CF6)];
+      return billsProvider.examTypes.asMap().entries.map((entry) {
+        final idx = entry.key;
+        final map = entry.value;
+        return {
+          ...map,
+          'color': colors[idx % colors.length],
+        };
+      }).toList();
+    }
+    return _fallbackExamTypes;
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final billsProvider = Provider.of<BillsProvider>(context, listen: false);
+      billsProvider.fetchExamTypes();
       if (authProvider.user?.phone != null && authProvider.user!.phone.isNotEmpty) {
         _phoneController.text = authProvider.user!.phone;
       }
@@ -61,7 +78,10 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
       return;
     }
 
-    final exam = _examTypes[_selectedExamIndex];
+    final billsProvider = Provider.of<BillsProvider>(context, listen: false);
+    final examTypes = _getExamTypes(billsProvider);
+    final safeIndex = _selectedExamIndex >= examTypes.length ? 0 : _selectedExamIndex;
+    final exam = examTypes[safeIndex];
     final totalPrice = (exam['price'] as double) * _quantity;
     final currencySymbol = Provider.of<AppConfigProvider>(context, listen: false).currencySymbol;
 
@@ -108,6 +128,12 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
           backgroundColor: const Color(0xFFEF4444),
         ),
       );
+      final msg = response.message.toLowerCase();
+      if (msg.contains('pin') || msg.contains('incorrect') || msg.contains('invalid')) {
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (mounted) _submitOrder();
+        });
+      }
     }
   }
 
@@ -236,7 +262,9 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
     final primaryColor = Theme.of(context).primaryColor;
     final currencySymbol = configProvider.currencySymbol;
 
-    final selectedExam = _examTypes[_selectedExamIndex];
+    final examTypes = _getExamTypes(billsProvider);
+    final safeIndex = _selectedExamIndex >= examTypes.length ? 0 : _selectedExamIndex;
+    final selectedExam = examTypes[safeIndex];
     final totalPrice = (selectedExam['price'] as double) * _quantity;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -261,9 +289,9 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
 
               // Exam Type 3D Selector Cards
               Column(
-                children: List.generate(_examTypes.length, (index) {
-                  final exam = _examTypes[index];
-                  final isSelected = _selectedExamIndex == index;
+                children: List.generate(examTypes.length, (index) {
+                  final exam = examTypes[index];
+                  final isSelected = safeIndex == index;
                   final examColor = exam['color'] as Color;
 
                   return Padding(

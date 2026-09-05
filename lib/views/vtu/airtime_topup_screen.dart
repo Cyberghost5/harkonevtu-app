@@ -135,6 +135,12 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
           backgroundColor: const Color(0xFFEF4444),
         ),
       );
+      final msg = response.message.toLowerCase();
+      if (msg.contains('pin') || msg.contains('incorrect') || msg.contains('invalid')) {
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (mounted) _submitTopUp();
+        });
+      }
     }
   }
 

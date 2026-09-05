@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/storage/secure_storage_service.dart';
@@ -24,6 +25,7 @@ class TransactionPinModal extends StatefulWidget {
 class _TransactionPinModalState extends State<TransactionPinModal> {
   final List<TextEditingController> _controllers = List.generate(4, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
+  final List<FocusNode> _keyboardFocusNodes = List.generate(4, (_) => FocusNode());
   bool _isAuthenticatingBio = false;
   String? _savedPin;
 
@@ -51,28 +53,17 @@ class _TransactionPinModalState extends State<TransactionPinModal> {
     if (_isAuthenticatingBio) return;
     setState(() => _isAuthenticatingBio = true);
 
+    _savedPin ??= await SecureStorageService().getPin();
+
     final authenticated = await authProvider.authenticateWithBiometrics();
 
     if (!mounted) return;
     setState(() => _isAuthenticatingBio = false);
 
     if (authenticated) {
-      final pin = _savedPin ?? _getPin();
-      if (pin.length == 4) {
-        for (int i = 0; i < 4; i++) {
-          _controllers[i].text = pin[i];
-        }
-        Navigator.of(context).pop();
-        widget.onPinConfirmed(pin);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Biometrics verified! Please enter your 4-digit PIN once to save it for 1-tap future biometric payments.'),
-            backgroundColor: Color(0xFF10B981),
-            duration: Duration(seconds: 4),
-          ),
-        );
-      }
+      final pin = (_savedPin != null && _savedPin!.isNotEmpty) ? _savedPin! : _getPin();
+      Navigator.of(context).pop();
+      widget.onPinConfirmed(pin);
     }
   }
 
@@ -83,6 +74,9 @@ class _TransactionPinModalState extends State<TransactionPinModal> {
     }
     for (var f in _focusNodes) {
       f.dispose();
+    }
+    for (var k in _keyboardFocusNodes) {
+      k.dispose();
     }
     super.dispose();
   }
@@ -186,31 +180,43 @@ class _TransactionPinModalState extends State<TransactionPinModal> {
                   depth: 6,
                   isRecessed: true,
                   child: Center(
-                    child: TextFormField(
-                      controller: _controllers[index],
-                      focusNode: _focusNodes[index],
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      maxLength: 1,
-                      obscureText: true,
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: titleCol),
-                      decoration: const InputDecoration(
-                        counterText: '',
-                        contentPadding: EdgeInsets.zero,
-                        border: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                      ),
-                      onChanged: (val) {
-                        if (val.isNotEmpty && index < 3) {
-                          _focusNodes[index + 1].requestFocus();
-                        } else if (val.isEmpty && index > 0) {
-                          _focusNodes[index - 1].requestFocus();
-                        }
-                        if (_getPin().length == 4) {
-                          _handleConfirm();
+                    child: KeyboardListener(
+                      focusNode: _keyboardFocusNodes[index],
+                      onKeyEvent: (event) {
+                        if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.backspace) {
+                          if (_controllers[index].text.isEmpty && index > 0) {
+                            _controllers[index - 1].clear();
+                            _focusNodes[index - 1].requestFocus();
+                          }
                         }
                       },
+                      child: TextFormField(
+                        controller: _controllers[index],
+                        focusNode: _focusNodes[index],
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        maxLength: 1,
+                        obscureText: true,
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: titleCol),
+                        decoration: const InputDecoration(
+                          counterText: '',
+                          contentPadding: EdgeInsets.zero,
+                          border: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                        ),
+                        onChanged: (val) {
+                          if (val.isNotEmpty && index < 3) {
+                            _focusNodes[index + 1].requestFocus();
+                          } else if (val.isEmpty && index > 0) {
+                            _controllers[index - 1].clear();
+                            _focusNodes[index - 1].requestFocus();
+                          }
+                          if (_getPin().length == 4) {
+                            _handleConfirm();
+                          }
+                        },
+                      ),
                     ),
                   ),
                 ),

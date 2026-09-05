@@ -110,6 +110,7 @@ class SpecializedProvider extends ChangeNotifier {
     required double amount,
     String? proofPath,
     String? reference,
+    String? pin,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -122,6 +123,8 @@ class SpecializedProvider extends ChangeNotifier {
         if (reference != null && reference.isNotEmpty) 'reference': reference,
         if (proofPath != null && proofPath.isNotEmpty) 'proof_image': proofPath,
         if (proofPath != null && proofPath.isNotEmpty) 'proof': proofPath,
+        if (pin != null && pin.isNotEmpty) 'pin': pin,
+        if (pin != null && pin.isNotEmpty) 'transaction_pin': pin,
       };
 
       final response = await _apiClient.post('/airtime-to-cash/submit', data: payload);

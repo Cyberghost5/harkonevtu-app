@@ -221,6 +221,40 @@ class BillsProvider extends ChangeNotifier {
     }
   }
 
+  List<Map<String, dynamic>> _examTypes = [];
+  List<Map<String, dynamic>> get examTypes => _examTypes;
+
+  Future<void> fetchExamTypes() async {
+    try {
+      final response = await _apiClient.get('/bills/exam-pins/types');
+      if (response.status && response.data != null) {
+        dynamic typesData;
+        if (response.data is Map && response.data['types'] != null) {
+          typesData = response.data['types'];
+        } else if (response.data is Map && response.data['data'] != null && response.data['data']['types'] != null) {
+          typesData = response.data['data']['types'];
+        } else if (response.data is List) {
+          typesData = response.data;
+        }
+
+        if (typesData is List) {
+          _examTypes = typesData.map((e) {
+            final map = Map<String, dynamic>.from(e as Map);
+            return {
+              'id': map['id'],
+              'name': map['name'] ?? map['title'] ?? 'Exam PIN',
+              'price': (map['unit_price'] ?? map['price'] ?? 0).toDouble(),
+              'code': map['code'],
+            };
+          }).toList();
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching exam pin types: $e');
+    }
+  }
+
   Future<ApiResponse> purchaseExamPin({
     required dynamic examTypeId,
     required int quantity,
@@ -231,12 +265,16 @@ class BillsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiClient.post('/bills/exam-pins/purchase', data: {
-        'exam_type_id': examTypeId,
+      final parsedId = int.tryParse(examTypeId.toString()) ?? examTypeId;
+      final payload = {
+        'exam_type_id': parsedId,
         'quantity': quantity,
         'phone': phone,
         'pin': pin,
-      });
+        'transaction_pin': pin,
+      };
+
+      final response = await _apiClient.post('/bills/exam-pins/purchase', data: payload);
 
       _isLoading = false;
       notifyListeners();
