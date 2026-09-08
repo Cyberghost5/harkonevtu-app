@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../navigation/main_navigation_shell.dart';
+
 
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
@@ -87,14 +89,18 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
     final success = await authProvider.verifyOtp(widget.email, otp);
 
     if (!mounted) return;
 
     if (success) {
+      await dashboardProvider.fetchDashboardData();
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('OTP verified successfully!'),
+          content: Text('OTP verified successfully! Welcome.'),
           backgroundColor: Color(0xFF10B981),
         ),
       );
@@ -103,6 +109,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         widget.onVerificationSuccess!();
       }
     } else {
+
       final errorMsg = authProvider.errorMessage ?? 'Verification failed.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

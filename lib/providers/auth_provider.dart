@@ -208,14 +208,20 @@ class AuthProvider extends ChangeNotifier {
       final response = await _apiClient.post('/auth/register', data: payload);
 
       if (response.status) {
-        if (response.data != null && response.data['token'] != null) {
-          _token = response.data['token'].toString();
-          await _storage.saveToken(_token!);
-          if (response.data['user'] != null) {
-            _user = UserModel.fromJson(response.data['user'] as Map<String, dynamic>);
+        if (response.data != null && response.data is Map<String, dynamic>) {
+          final resData = response.data as Map<String, dynamic>;
+          final token = resData['token'] ?? resData['access_token'] ?? resData['user']?['token'];
+          if (token != null && token.toString().isNotEmpty) {
+            _token = token.toString();
+            await _storage.saveToken(_token!);
+          }
+          if (resData['user'] != null && resData['user'] is Map<String, dynamic>) {
+            _user = UserModel.fromJson(resData['user'] as Map<String, dynamic>);
             await _storage.saveUserData(_user!.toJson());
           }
-          NotificationService().syncDeviceToken(_apiClient);
+          if (_token != null && _token!.isNotEmpty) {
+            NotificationService().syncDeviceToken(_apiClient);
+          }
         }
         _isLoading = false;
         notifyListeners();
@@ -255,6 +261,28 @@ class AuthProvider extends ChangeNotifier {
       });
 
       if (response.status) {
+        if (response.data != null) {
+          final resData = response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : <String, dynamic>{};
+          final token = resData['token'] ?? resData['access_token'] ?? resData['user']?['token'];
+          if (token != null && token.toString().isNotEmpty) {
+            _token = token.toString();
+            await _storage.saveToken(_token!);
+          }
+          if (resData['user'] != null && resData['user'] is Map<String, dynamic>) {
+            _user = UserModel.fromJson(resData['user'] as Map<String, dynamic>);
+            await _storage.saveUserData(_user!.toJson());
+          }
+        }
+
+        if (_token == null || _token!.isEmpty) {
+          _token = await _storage.getToken();
+        }
+
+        if (_token != null && _token!.isNotEmpty) {
+          NotificationService().syncDeviceToken(_apiClient);
+          await fetchProfile();
+        }
+
         _isLoading = false;
         notifyListeners();
         return true;
@@ -271,6 +299,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     }
   }
+
 
   Future<bool> resendOtp(String email) async {
     try {
