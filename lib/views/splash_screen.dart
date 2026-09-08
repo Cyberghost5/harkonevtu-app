@@ -9,6 +9,7 @@ import 'maintenance_screen.dart';
 import 'force_update_screen.dart';
 import 'onboarding_screen.dart';
 import 'auth/login_screen.dart';
+import 'offline_screen.dart';
 
 import 'navigation/main_navigation_shell.dart';
 
@@ -36,6 +37,21 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted) return;
 
+    // Handle offline status: display OfflineScreen cleanly
+    if (configProvider.isOffline) {
+      widget.onNavigate(
+        OfflineScreen(
+          onRetry: () async {
+            // Return to splash loading screen and retry init
+            widget.onNavigate(
+              SplashScreen(onNavigate: widget.onNavigate),
+            );
+          },
+        ),
+      );
+      return;
+    }
+
     // Check maintenance mode
     if (configProvider.isMaintenance) {
       widget.onNavigate(const MaintenanceScreen());
@@ -47,6 +63,7 @@ class _SplashScreenState extends State<SplashScreen> {
       widget.onNavigate(const ForceUpdateScreen());
       return;
     }
+
 
     // Check secure storage for token & onboarding status
     final storage = SecureStorageService();

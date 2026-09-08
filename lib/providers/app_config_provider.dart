@@ -3,19 +3,24 @@ import '../core/api/api_client.dart';
 import '../core/storage/secure_storage_service.dart';
 import '../models/app_config_model.dart';
 
+import '../core/services/connectivity_service.dart';
+
 class AppConfigProvider extends ChangeNotifier {
   final ApiClient _apiClient = ApiClient();
   final SecureStorageService _storage = SecureStorageService();
+  final ConnectivityService _connectivityService = ConnectivityService();
 
   AppConfigModel? _config;
   bool _isLoading = true;
   bool _isInitialized = false;
+  bool _isOffline = false;
   String? _errorMessage;
   ThemeMode _themeMode = ThemeMode.system;
 
   AppConfigModel? get config => _config;
   bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
+  bool get isOffline => _isOffline;
   String? get errorMessage => _errorMessage;
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
@@ -55,73 +60,36 @@ class AppConfigProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    // First check connectivity before making request
+    final hasConnection = await _connectivityService.hasInternetConnection();
+    if (!hasConnection) {
+      _isOffline = true;
+      _isLoading = false;
+      _isInitialized = false;
+      notifyListeners();
+      return;
+    }
+
     try {
       final response = await _apiClient.get('/app-config');
 
       if (response.status && response.data != null) {
         _config = AppConfigModel.fromJson(response.data as Map<String, dynamic>);
         _isInitialized = true;
+        _isOffline = false;
       } else {
         _errorMessage = response.message.isNotEmpty ? response.message : 'Failed to fetch config.';
-        _useFallbackConfig();
+        _isOffline = true;
+        _isInitialized = false;
       }
     } catch (e) {
       _errorMessage = e.toString();
-      _useFallbackConfig();
+      _isOffline = true;
+      _isInitialized = false;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
-
-  void _useFallbackConfig() {
-    _config ??= AppConfigModel(
-      appName: 'Harkone VTU',
-      siteName: 'Harkone VTU',
-      themeColor: '#45bae6',
-      currency: 'NGN',
-      currencySymbol: '₦',
-      appVersion: '1.0.0',
-      minVersion: '1.0.0',
-      forceUpdate: false,
-      maintenanceMode: false,
-      maintenanceMessage: 'Platform is under routine maintenance. Please check back shortly.',
-      services: AppServicesModel(),
-      paymentGateways: PaymentGatewaysModel(
-        activeGateway: 'paystack',
-        paystackPublicKey: '',
-        monnifyApiKey: '',
-        monnifyContractNo: '',
-      ),
-      support: SupportInfoModel(
-        phone: '',
-        whatsapp: '',
-        email: '',
-        hours: '24/7',
-        whatsappGroup: '',
-        telegramChannel: '',
-      ),
-      onboardingSlides: [
-        OnboardingSlideModel(
-          id: 1,
-          title: 'Instant Airtime & Cheap Data',
-          description: 'Top up airtime and buy SME & Gifting data bundles instantly across MTN, Airtel, Glo, and 9mobile at wholesale prices.',
-          sortOrder: 1,
-        ),
-        OnboardingSlideModel(
-          id: 2,
-          title: 'Pay Utilities & Cable TV',
-          description: 'Pay electricity bills (Prepaid/Postpaid) and renew DSTV, GOtv, and StarTimes subscriptions with zero hassle.',
-          sortOrder: 2,
-        ),
-        OnboardingSlideModel(
-          id: 3,
-          title: '24/7 Automated Wallet Funding',
-          description: 'Get dedicated virtual bank accounts for instant automated wallet funding anytime, day or night.',
-          sortOrder: 3,
-        ),
-      ],
-    );
-    _isInitialized = true;
-  }
 }
+
