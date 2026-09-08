@@ -5,10 +5,25 @@ import '../core/services/notification_service.dart';
 import '../core/storage/secure_storage_service.dart';
 import '../models/user_model.dart';
 
+class LoginResult {
+  final bool success;
+  final bool requiresVerification;
+  final String? email;
+  final String message;
+
+  LoginResult({
+    required this.success,
+    this.requiresVerification = false,
+    this.email,
+    required this.message,
+  });
+}
+
 class AuthProvider extends ChangeNotifier {
   final ApiClient _apiClient = ApiClient();
   final SecureStorageService _storage = SecureStorageService();
   final LocalAuthentication _localAuth = LocalAuthentication();
+
 
   UserModel? _user;
   String? _token;
@@ -82,12 +97,13 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> toggleBiometrics(bool enable) async {
+
     _isBiometricEnabled = enable;
     await _storage.setBiometricsEnabled(enable);
     notifyListeners();
   }
 
-  Future<bool> login(String loginInput, String password) async {
+  Future<LoginResult> loginDetailed(String loginInput, String password) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -111,20 +127,60 @@ class AuthProvider extends ChangeNotifier {
         }
         _isLoading = false;
         notifyListeners();
-        return true;
+        return LoginResult(success: true, message: response.message);
       } else {
         _errorMessage = response.message.isNotEmpty ? response.message : 'Login failed.';
+        
+        final resData = response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : <String, dynamic>{};
+        final errorsData = response.errors ?? <String, dynamic>{};
+        final msgLower = response.message.toLowerCase();
+
+        final isUnverified = resData['requires_verification'] == true ||
+            resData['email_verified'] == false ||
+            resData['is_verified'] == false ||
+            errorsData['requires_verification'] == true ||
+            errorsData['email_verified'] == false ||
+            msgLower.contains('unverified') ||
+            msgLower.contains('verify') ||
+            msgLower.contains('verification') ||
+            msgLower.contains('otp');
+
+        if (isUnverified) {
+          String? email = resData['email']?.toString();
+          email ??= resData['user']?['email']?.toString();
+          if (email == null || email.isEmpty) {
+            if (loginInput.contains('@')) {
+              email = loginInput;
+            }
+          }
+
+          _isLoading = false;
+          notifyListeners();
+          return LoginResult(
+            success: false,
+            requiresVerification: true,
+            email: email ?? loginInput,
+            message: _errorMessage!,
+          );
+        }
+
         _isLoading = false;
         notifyListeners();
-        return false;
+        return LoginResult(success: false, message: _errorMessage!);
       }
     } catch (e) {
       _errorMessage = 'An error occurred during login.';
       _isLoading = false;
       notifyListeners();
-      return false;
+      return LoginResult(success: false, message: _errorMessage!);
     }
   }
+
+  Future<bool> login(String loginInput, String password) async {
+    final result = await loginDetailed(loginInput, password);
+    return result.success;
+  }
+
 
   Future<bool> register({
     required String name,

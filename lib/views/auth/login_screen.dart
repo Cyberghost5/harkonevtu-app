@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
@@ -8,6 +7,7 @@ import '../../providers/dashboard_provider.dart';
 import '../navigation/main_navigation_shell.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
+import 'otp_verification_screen.dart';
 
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
@@ -63,14 +63,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
 
-    final success = await authProvider.login(
+    final result = await authProvider.loginDetailed(
       _loginController.text.trim(),
       _passwordController.text,
     );
 
     if (!mounted) return;
 
-    if (success) {
+    if (result.success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Login successful! Welcome back.'),
@@ -83,6 +83,29 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       if (widget.onLoginSuccess != null) {
         widget.onLoginSuccess!();
       }
+    } else if (result.requiresVerification) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.message.isNotEmpty
+                ? result.message
+                : 'Account unverified. A new OTP verification code has been sent to your email.',
+          ),
+          backgroundColor: Colors.amber.shade800,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      widget.onNavigate(
+        OtpVerificationScreen(
+          email: result.email ?? _loginController.text.trim(),
+          onNavigate: widget.onNavigate,
+          onVerificationSuccess: () {
+            if (widget.onLoginSuccess != null) {
+              widget.onLoginSuccess!();
+            }
+          },
+        ),
+      );
     } else {
       final errorMsg = authProvider.errorMessage ?? 'Login failed. Please check credentials.';
       ScaffoldMessenger.of(context).showSnackBar(
@@ -93,6 +116,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       );
     }
   }
+
 
   void _handleBiometricsLogin() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
