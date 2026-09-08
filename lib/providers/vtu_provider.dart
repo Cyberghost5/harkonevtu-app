@@ -70,9 +70,17 @@ class VtuProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      var response = await _apiClient.post('/data/plans', data: {'network': networkKey.toLowerCase()});
+      var response = await _apiClient.post('/data/plans', data: {
+        'network': networkKey.toLowerCase(),
+        'per_page': 100,
+        'limit': 100,
+      });
       if (!response.status || response.data == null) {
-        response = await _apiClient.get('/data/plans', queryParameters: {'network': networkKey.toLowerCase()});
+        response = await _apiClient.get('/data/plans', queryParameters: {
+          'network': networkKey.toLowerCase(),
+          'per_page': 100,
+          'limit': 100,
+        });
       }
 
       if (response.status && response.data != null) {
@@ -81,7 +89,7 @@ class VtuProvider extends ChangeNotifier {
           listData = response.data;
         } else if (response.data is Map<String, dynamic>) {
           final map = response.data as Map<String, dynamic>;
-          listData = map['plans'] ?? map['data'] ?? map['data_plans'];
+          listData = map['plans'] ?? map['data'] ?? map['data_plans'] ?? map['items'];
         }
 
         if (listData is List) {

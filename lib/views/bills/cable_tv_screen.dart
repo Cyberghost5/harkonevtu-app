@@ -27,21 +27,16 @@ class _CableTvScreenState extends State<CableTvScreen> {
   int _selectedProviderIndex = 0;
   CablePlanModel? _selectedPlan;
 
-  final List<Map<String, dynamic>> _providers = [
-    {'id': 1, 'name': 'DSTV', 'color': const Color(0xFF0284C7)},
-    {'id': 2, 'name': 'GOtv', 'color': const Color(0xFF16A34A)},
-    {'id': 3, 'name': 'StarTimes', 'color': const Color(0xFFEA580C)},
-    {'id': 4, 'name': 'Showmax', 'color': const Color(0xFFE11D48)},
-  ];
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       if (authProvider.user?.phone != null && authProvider.user!.phone.isNotEmpty) {
         _phoneController.text = authProvider.user!.phone;
       }
+      final billsProvider = Provider.of<BillsProvider>(context, listen: false);
+      await billsProvider.fetchCableProviders();
       _loadCablePlans();
     });
   }
@@ -53,8 +48,15 @@ class _CableTvScreenState extends State<CableTvScreen> {
     super.dispose();
   }
 
+  List<Map<String, dynamic>> _getProviders() {
+    final billsProvider = Provider.of<BillsProvider>(context, listen: false);
+    return billsProvider.cableProviders;
+  }
+
   void _loadCablePlans() {
-    final providerId = _providers[_selectedProviderIndex]['id'];
+    final providers = _getProviders();
+    final safeIndex = _selectedProviderIndex < providers.length ? _selectedProviderIndex : 0;
+    final providerId = providers[safeIndex]['id'];
     Provider.of<BillsProvider>(context, listen: false).fetchCablePlans(providerId);
     setState(() {
       _selectedPlan = null;
@@ -73,7 +75,9 @@ class _CableTvScreenState extends State<CableTvScreen> {
       return;
     }
 
-    final providerId = _providers[_selectedProviderIndex]['id'];
+    final providers = _getProviders();
+    final safeIndex = _selectedProviderIndex < providers.length ? _selectedProviderIndex : 0;
+    final providerId = providers[safeIndex]['id'];
     final billsProvider = Provider.of<BillsProvider>(context, listen: false);
     final success = await billsProvider.validateSmartcard(
       providerId: providerId,
@@ -114,7 +118,9 @@ class _CableTvScreenState extends State<CableTvScreen> {
     }
 
     final currencySymbol = Provider.of<AppConfigProvider>(context, listen: false).currencySymbol;
-    final providerName = _providers[_selectedProviderIndex]['name'];
+    final providers = _getProviders();
+    final safeIndex = _selectedProviderIndex < providers.length ? _selectedProviderIndex : 0;
+    final providerName = providers[safeIndex]['name'];
 
     showModalBottomSheet(
       context: context,
@@ -129,7 +135,9 @@ class _CableTvScreenState extends State<CableTvScreen> {
   }
 
   void _executePurchase(String smartcard, String phone, String pin) async {
-    final providerId = _providers[_selectedProviderIndex]['id'];
+    final providers = _getProviders();
+    final safeIndex = _selectedProviderIndex < providers.length ? _selectedProviderIndex : 0;
+    final providerId = providers[safeIndex]['id'];
     final billsProvider = Provider.of<BillsProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
@@ -184,6 +192,42 @@ class _CableTvScreenState extends State<CableTvScreen> {
     final titleCol = Theme.of(context).colorScheme.onSurface;
     final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
+    if (billsProvider.cableProviders.isEmpty && !billsProvider.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Cable TV Subscription')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.cloud_off_rounded, size: 64, color: Color(0xFFEF4444)),
+                const SizedBox(height: 16),
+                Text(
+                  billsProvider.errorMessage ?? 'Failed to load Cable TV providers. Please try again.',
+                  style: TextStyle(color: titleCol, fontSize: 15, fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ClayButton(
+                  text: 'Try Again',
+                  icon: Icons.refresh_rounded,
+                  width: 160,
+                  onPressed: () async {
+                    await billsProvider.fetchCableProviders();
+                    _loadCablePlans();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final activeProviders = billsProvider.cableProviders;
+    final safeSelectedIndex = _selectedProviderIndex < activeProviders.length ? _selectedProviderIndex : 0;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cable TV Subscription'),
@@ -200,46 +244,55 @@ class _CableTvScreenState extends State<CableTvScreen> {
                 style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
-              Row(
-                children: List.generate(_providers.length, (index) {
-                  final prov = _providers[index];
-                  final isSelected = _selectedProviderIndex == index;
-                  final provColor = prov['color'] as Color;
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: List.generate(activeProviders.length, (index) {
+                    final prov = activeProviders[index];
+                    final isSelected = safeSelectedIndex == index;
+                    final provColor = prov['color'] is Color ? prov['color'] as Color : const Color(0xFF0284C7);
+                    final screenWidth = MediaQuery.of(context).size.width - 40;
+                    final itemWidth = activeProviders.length <= 4
+                        ? (screenWidth - (activeProviders.length - 1) * 8) / activeProviders.length
+                        : 95.0;
 
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: ClayContainer(
-                        borderRadius: 16,
-                        depth: isSelected ? 12 : 6,
-                        isRecessed: isSelected,
-                        color: isSelected
-                            ? provColor.withValues(alpha: isDark ? 0.25 : 0.15)
-                            : (isDark ? const Color(0xFF192234) : Colors.white),
-                        borderColor: isSelected ? provColor : null,
-                        borderWidth: isSelected ? 2.0 : 0.0,
-                        onTap: () {
-                          setState(() {
-                            _selectedProviderIndex = index;
-                          });
-                          billsProvider.clearValidation();
-                          _loadCablePlans();
-                        },
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Center(
-                          child: Text(
-                            prov['name'] as String,
-                            style: TextStyle(
-                              color: isSelected ? provColor : subCol,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
+                    return SizedBox(
+                      width: itemWidth,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ClayContainer(
+                          borderRadius: 16,
+                          depth: isSelected ? 12 : 6,
+                          isRecessed: isSelected,
+                          color: isSelected
+                              ? provColor.withValues(alpha: isDark ? 0.25 : 0.15)
+                              : (isDark ? const Color(0xFF192234) : Colors.white),
+                          borderColor: isSelected ? provColor : null,
+                          borderWidth: isSelected ? 2.0 : 0.0,
+                          onTap: () {
+                            setState(() {
+                              _selectedProviderIndex = index;
+                            });
+                            billsProvider.clearValidation();
+                            _loadCablePlans();
+                          },
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Center(
+                            child: Text(
+                              prov['name'] as String,
+                              style: TextStyle(
+                                color: isSelected ? provColor : subCol,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                }),
+                    );
+                  }),
+                ),
               ),
               const SizedBox(height: 24),
 

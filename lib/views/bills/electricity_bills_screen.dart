@@ -272,6 +272,48 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
     final titleCol = Theme.of(context).colorScheme.onSurface;
     final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
+    if (billsProvider.discos.isEmpty && !billsProvider.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Pay Electricity Bill')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.cloud_off_rounded, size: 64, color: Color(0xFFEF4444)),
+                const SizedBox(height: 16),
+                Text(
+                  billsProvider.errorMessage ?? 'Failed to load electricity discos. Please try again.',
+                  style: TextStyle(color: titleCol, fontSize: 15, fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ClayButton(
+                  text: 'Try Again',
+                  icon: Icons.refresh_rounded,
+                  width: 160,
+                  onPressed: () {
+                    billsProvider.fetchDiscos().then((_) {
+                      if (billsProvider.discos.isNotEmpty && mounted) {
+                        setState(() {
+                          _selectedDisco = billsProvider.discos.first;
+                        });
+                      }
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_selectedDisco == null && billsProvider.discos.isNotEmpty) {
+      _selectedDisco = billsProvider.discos.first;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pay Electricity Bill'),

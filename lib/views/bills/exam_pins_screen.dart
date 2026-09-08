@@ -26,25 +26,16 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
   int _selectedExamIndex = 0;
   int _quantity = 1;
 
-  final List<Map<String, dynamic>> _fallbackExamTypes = [
-    {'id': 1, 'name': 'WAEC Result Checker PIN', 'price': 3600.0, 'code': 'waec', 'color': const Color(0xFF3B82F6)},
-    {'id': 2, 'name': 'NECO Result Checker PIN', 'price': 1400.0, 'code': 'neco', 'color': const Color(0xFF10B981)},
-    {'id': 3, 'name': 'NABTEB Result Checker PIN', 'price': 1000.0, 'code': 'nabteb', 'color': const Color(0xFFF59E0B)},
-  ];
-
   List<Map<String, dynamic>> _getExamTypes(BillsProvider billsProvider) {
-    if (billsProvider.examTypes.isNotEmpty) {
-      final colors = [const Color(0xFF3B82F6), const Color(0xFF10B981), const Color(0xFFF59E0B), const Color(0xFF8B5CF6)];
-      return billsProvider.examTypes.asMap().entries.map((entry) {
-        final idx = entry.key;
-        final map = entry.value;
-        return {
-          ...map,
-          'color': colors[idx % colors.length],
-        };
-      }).toList();
-    }
-    return _fallbackExamTypes;
+    final colors = [const Color(0xFF3B82F6), const Color(0xFF10B981), const Color(0xFFF59E0B), const Color(0xFF8B5CF6)];
+    return billsProvider.examTypes.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final map = entry.value;
+      return {
+        ...map,
+        'color': colors[idx % colors.length],
+      };
+    }).toList();
   }
 
   @override
@@ -262,14 +253,44 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
     final primaryColor = Theme.of(context).primaryColor;
     final currencySymbol = configProvider.currencySymbol;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleCol = Theme.of(context).colorScheme.onSurface;
+    final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    if (billsProvider.examTypes.isEmpty && !billsProvider.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Exam Result PINs')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.cloud_off_rounded, size: 64, color: Color(0xFFEF4444)),
+                const SizedBox(height: 16),
+                Text(
+                  billsProvider.errorMessage ?? 'Failed to load exam PIN services. Please try again.',
+                  style: TextStyle(color: titleCol, fontSize: 15, fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ClayButton(
+                  text: 'Try Again',
+                  icon: Icons.refresh_rounded,
+                  width: 160,
+                  onPressed: () => billsProvider.fetchExamTypes(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final examTypes = _getExamTypes(billsProvider);
     final safeIndex = _selectedExamIndex >= examTypes.length ? 0 : _selectedExamIndex;
     final selectedExam = examTypes[safeIndex];
     final totalPrice = (selectedExam['price'] as double) * _quantity;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final titleCol = Theme.of(context).colorScheme.onSurface;
-    final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return Scaffold(
       appBar: AppBar(

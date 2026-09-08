@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/specialized_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
@@ -24,25 +23,12 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
 
   Map<String, dynamic>? _selectedPlatform;
 
-  final List<Map<String, dynamic>> _platforms = [
-    {'key': 'bet9ja', 'name': 'Bet9ja', 'color': const Color(0xFF16A34A)},
-    {'key': 'sportybet', 'name': 'SportyBet', 'color': const Color(0xFFDC2626)},
-    {'key': '1xbet', 'name': '1xBet', 'color': const Color(0xFF0284C7)},
-    {'key': 'bangbet', 'name': 'BangBet', 'color': const Color(0xFFCA8A04)},
-    {'key': 'merrybet', 'name': 'MerryBet', 'color': const Color(0xFF9333EA)},
-    {'key': 'betway', 'name': 'BetWay', 'color': const Color(0xFF2563EB)},
-    {'key': 'nairabet', 'name': 'NairaBet', 'color': const Color(0xFF059669)},
-    {'key': 'betking', 'name': 'BetKing (KingMakers)', 'color': const Color(0xFF1D4ED8)},
-    {'key': 'paripesa', 'name': 'Paripesa', 'color': const Color(0xFFD97706)},
-    {'key': 'msport', 'name': 'MSport', 'color': const Color(0xFFE11D48)},
-    {'key': 'melbet', 'name': 'MelBet', 'color': const Color(0xFFF59E0B)},
-    {'key': '22bet', 'name': '22Bet', 'color': const Color(0xFF0D9488)},
-  ];
-
   @override
   void initState() {
     super.initState();
-    _selectedPlatform = _platforms.first;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<SpecializedProvider>(context, listen: false).fetchBettingPlatforms();
+    });
   }
 
   @override
@@ -176,6 +162,47 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
     final titleCol = Theme.of(context).colorScheme.onSurface;
     final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
+    if (specProvider.bettingPlatforms.isEmpty && !specProvider.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Betting Wallet Top-Up')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.cloud_off_rounded, size: 64, color: Color(0xFFEF4444)),
+                const SizedBox(height: 16),
+                Text(
+                  specProvider.errorMessage ?? 'Failed to load betting platforms. Please try again.',
+                  style: TextStyle(color: titleCol, fontSize: 15, fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ClayButton(
+                  text: 'Try Again',
+                  icon: Icons.refresh_rounded,
+                  width: 160,
+                  onPressed: () => specProvider.fetchBettingPlatforms(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final activePlatforms = specProvider.bettingPlatforms;
+    Map<String, dynamic>? selectedPlatform = _selectedPlatform;
+    final currentKey = selectedPlatform?['key'];
+    if (currentKey == null || !activePlatforms.any((p) => p['key'] == currentKey)) {
+      if (activePlatforms.isNotEmpty) {
+        selectedPlatform = activePlatforms.first;
+      }
+    } else {
+      selectedPlatform = activePlatforms.firstWhere((p) => p['key'] == currentKey, orElse: () => activePlatforms.first);
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Betting Wallet Top-Up'),
@@ -200,13 +227,13 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<Map<String, dynamic>>(
-                    value: _selectedPlatform,
+                    value: selectedPlatform,
                     isExpanded: true,
                     menuMaxHeight: 320,
                     dropdownColor: isDark ? const Color(0xFF192234) : Colors.white,
                     icon: Icon(Icons.arrow_drop_down_rounded, color: titleCol),
-                    items: _platforms.map((plat) {
-                      final color = plat['color'] as Color;
+                    items: activePlatforms.map((plat) {
+                      final color = plat['color'] is Color ? plat['color'] as Color : const Color(0xFF0284C7);
                       return DropdownMenuItem<Map<String, dynamic>>(
                         value: plat,
                         child: Row(

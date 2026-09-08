@@ -28,28 +28,53 @@ class BillsProvider extends ChangeNotifier {
   }
 
   Future<void> fetchDiscos() async {
-    try {
-      final response = await _apiClient.get('/bills/electricity/discos');
-      if (response.status && response.data != null) {
-        final list = response.data as List<dynamic>?;
-        if (list != null) {
-          _discos = list.map((item) => DiscoModel.fromJson(item as Map<String, dynamic>)).toList();
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    int attempts = 0;
+    bool success = false;
+
+    while (attempts < 3 && !success) {
+      attempts++;
+      try {
+        final response = await _apiClient.get(
+          '/bills/electricity/discos',
+          queryParameters: {'per_page': 100, 'limit': 100},
+        );
+
+        if (response.status && response.data != null) {
+          List<dynamic>? list;
+          if (response.data is List) {
+            list = response.data as List<dynamic>;
+          } else if (response.data is Map<String, dynamic>) {
+            final map = response.data as Map<String, dynamic>;
+            final rawList = map['discos'] ?? map['data'] ?? map['items'] ?? map['services'];
+            if (rawList is List) {
+              list = rawList;
+            }
+          }
+
+          if (list != null && list.isNotEmpty) {
+            _discos = list.map((item) => DiscoModel.fromJson(item as Map<String, dynamic>)).toList();
+            success = true;
+          }
         }
+      } catch (_) {}
+
+      if (!success && attempts < 3) {
+        await Future.delayed(const Duration(milliseconds: 1000));
       }
-    } catch (_) {
-      // Fallback default Discos
-      _discos = [
-        DiscoModel(id: 1, name: 'Abuja Electricity (AEDC)', code: 'abuja'),
-        DiscoModel(id: 2, name: 'Eko Electricity (EKEDC)', code: 'eko'),
-        DiscoModel(id: 3, name: 'Ikeja Electric (IKEDC)', code: 'ikeja'),
-        DiscoModel(id: 4, name: 'Ibadan Electricity (IBEDC)', code: 'ibadan'),
-        DiscoModel(id: 5, name: 'Enugu Electricity (EEDC)', code: 'enugu'),
-        DiscoModel(id: 6, name: 'Kano Electricity (KEDCO)', code: 'kano'),
-        DiscoModel(id: 7, name: 'Port Harcourt (PHED)', code: 'portharcourt'),
-      ];
     }
+
+    if (_discos.isEmpty) {
+      _errorMessage = 'Failed to load electricity discos. Please check your network connection and try again later.';
+    }
+
+    _isLoading = false;
     notifyListeners();
   }
+
 
   Future<bool> validateMeter({
     required dynamic discoId,
@@ -120,41 +145,147 @@ class BillsProvider extends ChangeNotifier {
     }
   }
 
+  List<Map<String, dynamic>> _cableProviders = [];
+  List<Map<String, dynamic>> get cableProviders => _cableProviders;
+
+  Future<void> fetchCableProviders() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    int attempts = 0;
+    bool success = false;
+
+    while (attempts < 3 && !success) {
+      attempts++;
+      try {
+        var response = await _apiClient.get(
+          '/bills/cable/providers',
+          queryParameters: {'per_page': 100, 'limit': 100},
+        );
+        if (!response.status || response.data == null) {
+          response = await _apiClient.get(
+            '/bills/cable',
+            queryParameters: {'per_page': 100, 'limit': 100},
+          );
+        }
+
+        if (response.status && response.data != null) {
+          List<dynamic>? list;
+          if (response.data is List) {
+            list = response.data as List<dynamic>;
+          } else if (response.data is Map<String, dynamic>) {
+            final map = response.data as Map<String, dynamic>;
+            final rawList = map['providers'] ?? map['cables'] ?? map['data'] ?? map['items'] ?? map['services'];
+            if (rawList is List) {
+              list = rawList;
+            }
+          }
+
+          if (list != null && list.isNotEmpty) {
+            _cableProviders = list.map((item) {
+              if (item is Map<String, dynamic>) {
+                final id = item['id'] ?? item['provider_id'] ?? item['cable_id'] ?? item['code'] ?? item['key'];
+                final name = item['name'] ?? item['provider_name'] ?? item['title'] ?? item['cable_name'] ?? id?.toString() ?? 'Cable TV';
+                return {
+                  'id': id,
+                  'name': name.toString(),
+                  'color': _getCableProviderColor(name.toString()),
+                };
+              }
+              return {
+                'id': item,
+                'name': item.toString(),
+                'color': const Color(0xFF0284C7),
+              };
+            }).toList();
+            success = true;
+          }
+        }
+      } catch (_) {}
+
+      if (!success && attempts < 3) {
+        await Future.delayed(const Duration(milliseconds: 1000));
+      }
+    }
+
+    if (_cableProviders.isEmpty) {
+      _errorMessage = 'Failed to load Cable TV providers. Please check your network connection and try again later.';
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Color _getCableProviderColor(String name) {
+    final lower = name.toLowerCase();
+    if (lower.contains('dstv')) return const Color(0xFF0284C7);
+    if (lower.contains('gotv')) return const Color(0xFF16A34A);
+    if (lower.contains('startimes') || lower.contains('startime')) return const Color(0xFFEA580C);
+    if (lower.contains('showmax')) return const Color(0xFFE11D48);
+    return const Color(0xFF6366F1);
+  }
+
   Future<void> fetchCablePlans(dynamic providerId) async {
     _isLoading = true;
     _cablePlans = [];
+    _errorMessage = null;
     notifyListeners();
 
-    try {
-      var response = await _apiClient.post('/bills/cable/plans', data: {
-        'provider_id': providerId,
-        'cable_id': providerId,
-      });
+    int attempts = 0;
+    bool success = false;
 
-      if (!response.status || response.data == null) {
-        response = await _apiClient.get('/bills/cable/plans', queryParameters: {'provider_id': providerId});
-      }
+    while (attempts < 3 && !success) {
+      attempts++;
+      try {
+        var response = await _apiClient.post('/bills/cable/plans', data: {
+          'provider_id': providerId,
+          'cable_id': providerId,
+          'per_page': 100,
+          'limit': 100,
+        });
 
-      if (response.status && response.data != null) {
-        dynamic listData;
-        if (response.data is List) {
-          listData = response.data;
-        } else if (response.data is Map<String, dynamic>) {
-          final map = response.data as Map<String, dynamic>;
-          listData = map['plans'] ?? map['data'] ?? map['packages'];
+        if (!response.status || response.data == null) {
+          response = await _apiClient.get(
+            '/bills/cable/plans',
+            queryParameters: {
+              'provider_id': providerId,
+              'cable_id': providerId,
+              'per_page': 100,
+              'limit': 100,
+            },
+          );
         }
 
-        if (listData is List) {
-          _cablePlans = listData
-              .map((item) => CablePlanModel.fromJson(item as Map<String, dynamic>))
-              .toList();
+        if (response.status && response.data != null) {
+          dynamic listData;
+          if (response.data is List) {
+            listData = response.data;
+          } else if (response.data is Map<String, dynamic>) {
+            final map = response.data as Map<String, dynamic>;
+            listData = map['plans'] ?? map['data'] ?? map['packages'] ?? map['items'];
+          }
+
+          if (listData is List) {
+            _cablePlans = listData
+                .map((item) => CablePlanModel.fromJson(item as Map<String, dynamic>))
+                .toList();
+            if (_cablePlans.isNotEmpty) success = true;
+          }
         }
+      } catch (_) {}
+
+      if (!success && attempts < 3) {
+        await Future.delayed(const Duration(milliseconds: 1000));
       }
-    } catch (_) {
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
+
+    if (_cablePlans.isEmpty) {
+      _errorMessage = 'Failed to load package plans for this provider. Please try again later.';
+    }
+
+    _isLoading = false;
+    notifyListeners();
   }
 
   Future<bool> validateSmartcard({
@@ -225,34 +356,58 @@ class BillsProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get examTypes => _examTypes;
 
   Future<void> fetchExamTypes() async {
-    try {
-      final response = await _apiClient.get('/bills/exam-pins/types');
-      if (response.status && response.data != null) {
-        dynamic typesData;
-        if (response.data is Map && response.data['types'] != null) {
-          typesData = response.data['types'];
-        } else if (response.data is Map && response.data['data'] != null && response.data['data']['types'] != null) {
-          typesData = response.data['data']['types'];
-        } else if (response.data is List) {
-          typesData = response.data;
-        }
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
 
-        if (typesData is List) {
-          _examTypes = typesData.map((e) {
-            final map = Map<String, dynamic>.from(e as Map);
-            return {
-              'id': map['id'],
-              'name': map['name'] ?? map['title'] ?? 'Exam PIN',
-              'price': (map['unit_price'] ?? map['price'] ?? 0).toDouble(),
-              'code': map['code'],
-            };
-          }).toList();
-          notifyListeners();
+    int attempts = 0;
+    bool success = false;
+
+    while (attempts < 3 && !success) {
+      attempts++;
+      try {
+        final response = await _apiClient.get(
+          '/bills/exam-pins/types',
+          queryParameters: {'per_page': 100, 'limit': 100},
+        );
+        if (response.status && response.data != null) {
+          dynamic typesData;
+          if (response.data is Map && response.data['types'] != null) {
+            typesData = response.data['types'];
+          } else if (response.data is Map && response.data['data'] != null && response.data['data']['types'] != null) {
+            typesData = response.data['data']['types'];
+          } else if (response.data is List) {
+            typesData = response.data;
+          }
+
+          if (typesData is List) {
+            _examTypes = typesData.map((e) {
+              final map = Map<String, dynamic>.from(e as Map);
+              return {
+                'id': map['id'],
+                'name': map['name'] ?? map['title'] ?? 'Exam PIN',
+                'price': (map['unit_price'] ?? map['price'] ?? 0).toDouble(),
+                'code': map['code'],
+              };
+            }).toList();
+            if (_examTypes.isNotEmpty) success = true;
+          }
         }
+      } catch (e) {
+        debugPrint('Error fetching exam pin types: $e');
       }
-    } catch (e) {
-      debugPrint('Error fetching exam pin types: $e');
+
+      if (!success && attempts < 3) {
+        await Future.delayed(const Duration(milliseconds: 1000));
+      }
     }
+
+    if (_examTypes.isEmpty) {
+      _errorMessage = 'Failed to load exam PIN services. Please check your network connection and try again later.';
+    }
+
+    _isLoading = false;
+    notifyListeners();
   }
 
   Future<ApiResponse> purchaseExamPin({

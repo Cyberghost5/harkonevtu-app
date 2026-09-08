@@ -8,16 +8,103 @@ class SpecializedProvider extends ChangeNotifier {
   bool _isValidating = false;
   String? _validatedCustomerName;
   String? _errorMessage;
+  List<Map<String, dynamic>> _bettingPlatforms = [];
 
   bool get isLoading => _isLoading;
   bool get isValidating => _isValidating;
   String? get validatedCustomerName => _validatedCustomerName;
   String? get errorMessage => _errorMessage;
+  List<Map<String, dynamic>> get bettingPlatforms => _bettingPlatforms;
 
   void clearValidation() {
     _validatedCustomerName = null;
     notifyListeners();
   }
+
+  Future<void> fetchBettingPlatforms() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    int attempts = 0;
+    bool success = false;
+
+    while (attempts < 3 && !success) {
+      attempts++;
+      try {
+        var response = await _apiClient.get(
+          '/betting/platforms',
+          queryParameters: {'per_page': 100, 'limit': 100},
+        );
+        if (!response.status || response.data == null) {
+          response = await _apiClient.get(
+            '/betting',
+            queryParameters: {'per_page': 100, 'limit': 100},
+          );
+        }
+
+        if (response.status && response.data != null) {
+          List<dynamic>? list;
+          if (response.data is List) {
+            list = response.data as List<dynamic>;
+          } else if (response.data is Map<String, dynamic>) {
+            final map = response.data as Map<String, dynamic>;
+            final rawList = map['platforms'] ?? map['data'] ?? map['items'] ?? map['services'] ?? map['betting'];
+            if (rawList is List) {
+              list = rawList;
+            }
+          }
+
+          if (list != null && list.isNotEmpty) {
+            _bettingPlatforms = list.map((item) {
+              if (item is Map<String, dynamic>) {
+                final key = item['key'] ?? item['code'] ?? item['platform'] ?? item['id']?.toString() ?? '';
+                final name = item['name'] ?? item['platform_name'] ?? item['title'] ?? key;
+                return {
+                  'key': key.toString(),
+                  'name': name.toString(),
+                  'color': _getPlatformColor(key.toString()),
+                };
+              }
+              return {
+                'key': item.toString(),
+                'name': item.toString(),
+                'color': const Color(0xFF0284C7),
+              };
+            }).toList();
+            if (_bettingPlatforms.isNotEmpty) success = true;
+          }
+        }
+      } catch (_) {}
+
+      if (!success && attempts < 3) {
+        await Future.delayed(const Duration(milliseconds: 1000));
+      }
+    }
+
+    if (_bettingPlatforms.isEmpty) {
+      _errorMessage = 'Failed to load betting platforms. Please check your network connection and try again later.';
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Color _getPlatformColor(String key) {
+    final lowerKey = key.toLowerCase();
+    if (lowerKey.contains('sporty')) return const Color(0xFFDC2626);
+    if (lowerKey.contains('9ja')) return const Color(0xFF16A34A);
+    if (lowerKey.contains('1x')) return const Color(0xFF0284C7);
+    if (lowerKey.contains('king')) return const Color(0xFF1D4ED8);
+    if (lowerKey.contains('way')) return const Color(0xFF2563EB);
+    if (lowerKey.contains('naira')) return const Color(0xFF059669);
+    if (lowerKey.contains('merry')) return const Color(0xFF9333EA);
+    if (lowerKey.contains('bang')) return const Color(0xFFCA8A04);
+    if (lowerKey.contains('msport')) return const Color(0xFFE11D48);
+    if (lowerKey.contains('mel')) return const Color(0xFFF59E0B);
+    return const Color(0xFF0284C7);
+  }
+
 
   Future<bool> validateBettingAccount({
     required String platform,
