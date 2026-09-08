@@ -274,8 +274,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     onPressed: authProvider.isLoading ? null : _handleLogin,
                   ),
 
-                  // Biometrics Login Button in 3D ClayButton
-                  if (authProvider.isBiometricAvailable) ...[
+                  // Biometrics Login Button in 3D ClayButton (Only visible when activated in Settings)
+                  if (authProvider.isBiometricAvailable && authProvider.isBiometricEnabled) ...[
                     const SizedBox(height: 16),
                     ClayButton(
                       text: 'Quick Biometric Login',
@@ -285,6 +285,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       onPressed: _handleBiometricsLogin,
                     ),
                   ],
+
 
                   const SizedBox(height: 32),
 

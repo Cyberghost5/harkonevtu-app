@@ -96,12 +96,54 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> toggleBiometrics(bool enable) async {
+  Future<bool> enableBiometricsWithVerification() async {
+    try {
+      final canCheck = await _localAuth.canCheckBiometrics;
+      final isSupported = await _localAuth.isDeviceSupported();
+      if (!canCheck && !isSupported) return false;
 
-    _isBiometricEnabled = enable;
-    await _storage.setBiometricsEnabled(enable);
+      final didAuthenticate = await _localAuth.authenticate(
+        localizedReason: 'Authenticate to activate Biometric Quick Login',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          useErrorDialogs: true,
+        ),
+      );
+
+      if (didAuthenticate) {
+        _isBiometricEnabled = true;
+        await _storage.setBiometricsEnabled(true);
+        notifyListeners();
+        return true;
+      } else {
+        _isBiometricEnabled = false;
+        await _storage.setBiometricsEnabled(false);
+        notifyListeners();
+        return false;
+      }
+    } catch (_) {
+      _isBiometricEnabled = false;
+      await _storage.setBiometricsEnabled(false);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> disableBiometrics() async {
+    _isBiometricEnabled = false;
+    await _storage.setBiometricsEnabled(false);
+    await _storage.clearBiometricCredentials();
     notifyListeners();
   }
+
+  Future<void> toggleBiometrics(bool enable) async {
+    if (enable) {
+      await enableBiometricsWithVerification();
+    } else {
+      await disableBiometrics();
+    }
+  }
+
 
   Future<LoginResult> loginDetailed(String loginInput, String password) async {
     _isLoading = true;

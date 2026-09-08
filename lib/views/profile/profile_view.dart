@@ -5,8 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
-import '../../core/storage/secure_storage_service.dart';
 import '../auth/login_screen.dart';
+
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
 import '../widgets/clay_text_field.dart';
@@ -1464,18 +1464,31 @@ class _ProfileViewState extends State<ProfileView> {
                     context,
                     icon: Icons.fingerprint_rounded,
                     title: 'Biometric Quick Login',
-                    subtitle: 'Enable Fingerprint / FaceID',
+                    subtitle: authProvider.isBiometricEnabled
+                        ? 'Active (Fingerprint / FaceID enabled)'
+                        : 'Tap switch to authenticate & activate',
                     color: primaryColor,
                     trailing: Switch(
                       value: authProvider.isBiometricEnabled,
                       activeThumbColor: primaryColor,
-                      onChanged: (val) {
-                        authProvider.toggleBiometrics(val);
+                      onChanged: (val) async {
+                        if (val) {
+                          final success = await authProvider.enableBiometricsWithVerification();
+                          if (success) {
+                            _showSnackBar('Biometric Quick Login enabled successfully!');
+                          } else {
+                            _showSnackBar('Biometric verification failed. Quick Login not activated.', isError: true);
+                          }
+                        } else {
+                          await authProvider.disableBiometrics();
+                          _showSnackBar('Biometric Quick Login disabled.');
+                        }
                       },
                     ),
                   ),
                   const SizedBox(height: 12),
                 ],
+
 
                 _buildTile(
                   context,

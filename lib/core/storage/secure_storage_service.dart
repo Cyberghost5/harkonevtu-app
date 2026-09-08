@@ -87,7 +87,12 @@ class SecureStorageService {
     return null;
   }
 
+  Future<void> clearBiometricCredentials() async {
+    await _storage.delete(key: _keyBioLogin);
+  }
+
   Future<void> setBiometricsEnabled(bool enabled) async {
+
     await _storage.write(key: _keyBiometrics, value: enabled.toString());
   }
 
