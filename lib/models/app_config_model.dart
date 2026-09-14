@@ -137,6 +137,9 @@ class AppConfigModel {
   final bool forceUpdate;
   final bool maintenanceMode;
   final String maintenanceMessage;
+  final String? updateUrl;
+  final String? playStoreUrl;
+  final String? appStoreUrl;
   final AppServicesModel services;
   final PaymentGatewaysModel paymentGateways;
   final SupportInfoModel support;
@@ -156,6 +159,9 @@ class AppConfigModel {
     required this.forceUpdate,
     required this.maintenanceMode,
     required this.maintenanceMessage,
+    this.updateUrl,
+    this.playStoreUrl,
+    this.appStoreUrl,
     required this.services,
     required this.paymentGateways,
     required this.support,
@@ -177,6 +183,9 @@ class AppConfigModel {
       forceUpdate: json['force_update'] ?? false,
       maintenanceMode: json['maintenance_mode'] ?? false,
       maintenanceMessage: json['maintenance_message'] ?? 'Platform is under routine maintenance. Please check back shortly.',
+      updateUrl: json['update_url'] ?? json['app_update_url'],
+      playStoreUrl: json['play_store_url'] ?? json['playstore_url'],
+      appStoreUrl: json['app_store_url'] ?? json['appstore_url'],
       services: AppServicesModel.fromJson(json['services'] ?? {}),
       paymentGateways: PaymentGatewaysModel.fromJson(json['payment_gateways'] ?? {}),
       support: SupportInfoModel.fromJson(json['support'] ?? {}),

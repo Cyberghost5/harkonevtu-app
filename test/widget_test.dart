@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nmillenium/main.dart';
+import 'package:harkonevtu/main.dart';
 
 void main() {
   testWidgets('App initializes successfully smoke test', (WidgetTester tester) async {

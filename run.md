@@ -137,6 +137,8 @@ git push origin brand/tincitybill
 ```bash
 git checkout brand/tincitybill
 git pull origin brand/tincitybill
+git fetch origin
+git reset --hard origin/brand/tincitybill
 flutter pub get
 dart run tool/build_brand.dart tincitybill --build
 ```

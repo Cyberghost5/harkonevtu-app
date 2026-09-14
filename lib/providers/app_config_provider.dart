@@ -54,6 +54,9 @@ class AppConfigProvider extends ChangeNotifier {
   bool get isMaintenance => _config?.maintenanceMode ?? false;
   bool get isForceUpdate => _config?.forceUpdate ?? false;
   String get maintenanceMessage => _config?.maintenanceMessage ?? 'Platform under maintenance.';
+  String? get updateUrl => _config?.updateUrl ?? _config?.playStoreUrl ?? _config?.appStoreUrl;
+  String? get playStoreUrl => _config?.playStoreUrl;
+  String? get appStoreUrl => _config?.appStoreUrl;
 
   Future<void> fetchAppConfig() async {
     _isLoading = true;

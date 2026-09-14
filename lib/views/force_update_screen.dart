@@ -1,9 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../providers/app_config_provider.dart';
 import 'widgets/clay_container.dart';
 import 'widgets/clay_button.dart';
 
 class ForceUpdateScreen extends StatelessWidget {
   const ForceUpdateScreen({super.key});
+
+  Future<void> _openUpdateStore(BuildContext context) async {
+    final configProvider = Provider.of<AppConfigProvider>(context, listen: false);
+
+    List<String> candidateUrls = [];
+
+    // 1. Check for brand-specific URLs returned dynamically from backend API
+    if (configProvider.updateUrl != null && configProvider.updateUrl!.isNotEmpty) {
+      candidateUrls.add(configProvider.updateUrl!);
+    }
+    if (configProvider.playStoreUrl != null && configProvider.playStoreUrl!.isNotEmpty) {
+      candidateUrls.add(configProvider.playStoreUrl!);
+    }
+    if (configProvider.appStoreUrl != null && configProvider.appStoreUrl!.isNotEmpty) {
+      candidateUrls.add(configProvider.appStoreUrl!);
+    }
+
+    // 2. Dynamically get current brand's package name at runtime (e.g. com.brand1.app)
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final packageName = packageInfo.packageName;
+      if (packageName.isNotEmpty) {
+        candidateUrls.add('market://details?id=$packageName');
+        candidateUrls.add('https://play.google.com/store/apps/details?id=$packageName');
+      }
+    } catch (_) {}
+
+    bool launched = false;
+    for (final urlStr in candidateUrls) {
+      try {
+        final Uri uri = Uri.parse(urlStr);
+        if (await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+          launched = true;
+          break;
+        }
+      } catch (_) {}
+    }
+
+
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open store link. Please search for the app on Play Store.'),
+          backgroundColor: Color(0xFFEF4444),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,9 +109,7 @@ class ForceUpdateScreen extends StatelessWidget {
                 height: 54,
                 depth: 14,
                 color: primaryColor,
-                onTap: () {
-                  // Open App store / Play store URL
-                },
+                onPressed: () => _openUpdateStore(context),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
