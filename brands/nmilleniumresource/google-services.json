@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "686309797782",
+    "project_id": "nmilleniumresource",
+    "storage_bucket": "nmilleniumresource.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:686309797782:android:7b87cc0bb3ff8ce621f7b7",
+        "android_client_info": {
+          "package_name": "com.harkonedesigns.nmilleniumresource"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAnu_oiDOByQUPbuqLS6uJ0JS_DQ_U8fyA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
