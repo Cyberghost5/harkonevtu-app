@@ -135,12 +135,12 @@ git push origin brand/tincitybill
 ### 2. On VPS (Pull & Rebuild):
 
 ```bash
-git checkout brand/dakeventures
-git pull origin brand/dakeventures
+git checkout brand/nmilleniumresource
+git pull origin brand/nmilleniumresource
 git fetch origin
-git reset --hard origin/brand/dakeventures
+git reset --hard origin/brand/nmilleniumresource
 flutter pub get
-dart run tool/build_brand.dart dakeventures --build
+dart run tool/build_brand.dart nmilleniumresource --build
 ```
 
 ---

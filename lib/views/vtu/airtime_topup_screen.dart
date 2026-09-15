@@ -28,7 +28,7 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
     {'key': 'mtn', 'name': 'MTN', 'color': const Color(0xFFFACC15)},
     {'key': 'airtel', 'name': 'Airtel', 'color': const Color(0xFFEF4444)},
     {'key': 'glo', 'name': 'Glo', 'color': const Color(0xFF10B981)},
-    {'key': '9mobile', 'name': '9mobile', 'color': const Color(0xFF84CC16)},
+    {'key': 'etisalat', 'name': '9mobile', 'color': const Color(0xFF84CC16)},
   ];
 
   final List<double> _quickAmounts = [100, 200, 500, 1000, 2000, 5000];

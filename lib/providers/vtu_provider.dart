@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api/api_client.dart';
 import '../models/data_plan_model.dart';
+import '../models/data_network_model.dart';
 
 class VtuProvider extends ChangeNotifier {
   final ApiClient _apiClient = ApiClient();
@@ -8,12 +9,49 @@ class VtuProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _detectedNetwork;
   List<DataPlanModel> _dataPlans = [];
+  List<DataNetworkModel> _dataNetworks = [];
   String? _errorMessage;
 
   bool get isLoading => _isLoading;
   String? get detectedNetwork => _detectedNetwork;
   List<DataPlanModel> get dataPlans => _dataPlans;
+  List<DataNetworkModel> get dataNetworks => _dataNetworks;
   String? get errorMessage => _errorMessage;
+
+  Future<void> fetchDataNetworks() async {
+    try {
+      final response = await _apiClient.get('/data/networks');
+      if (response.status && response.data != null) {
+        dynamic networksRaw;
+        if (response.data is Map<String, dynamic>) {
+          final map = response.data as Map<String, dynamic>;
+          if (map['data'] != null && map['data'] is Map<String, dynamic>) {
+            networksRaw = (map['data'] as Map<String, dynamic>)['networks'];
+          } else {
+            networksRaw = map['networks'];
+          }
+        } else if (response.data is List) {
+          networksRaw = response.data;
+        }
+
+        if (networksRaw is List) {
+          _dataNetworks = networksRaw
+              .map((item) => DataNetworkModel.fromJson(item as Map<String, dynamic>))
+              .toList();
+          notifyListeners();
+        }
+      }
+    } catch (_) {}
+  }
+
+  List<DataTypeModel> getDataTypesForNetwork(String networkKey) {
+    final net = _dataNetworks.firstWhere(
+      (n) => n.networkKey.toLowerCase() == networkKey.toLowerCase(),
+      orElse: () => DataNetworkModel(id: 0, name: '', networkKey: '', availableDataTypes: []),
+    );
+    return net.availableDataTypes;
+  }
+
 
   void clearNetworkLookup() {
     _detectedNetwork = null;

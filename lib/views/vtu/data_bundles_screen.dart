@@ -30,23 +30,20 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
     {'key': 'mtn', 'name': 'MTN', 'color': const Color(0xFFFACC15)},
     {'key': 'airtel', 'name': 'Airtel', 'color': const Color(0xFFEF4444)},
     {'key': 'glo', 'name': 'Glo', 'color': const Color(0xFF10B981)},
-    {'key': '9mobile', 'name': '9mobile', 'color': const Color(0xFF84CC16)},
+    {'key': 'etisalat', 'name': '9mobile', 'color': const Color(0xFF84CC16)},
   ];
 
-  final List<Map<String, String>> _typeFilters = [
-    {'key': 'all', 'label': 'All Plans'},
-    {'key': 'sme', 'label': 'SME'},
-    {'key': 'gifting', 'label': 'Gifting'},
-    {'key': 'corporate', 'label': 'Corporate'},
-  ];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final vtuProvider = Provider.of<VtuProvider>(context, listen: false);
+      vtuProvider.fetchDataNetworks();
       _loadDataPlans();
     });
   }
+
 
   @override
   void dispose() {
@@ -170,9 +167,19 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
     final primaryColor = Theme.of(context).primaryColor;
     final currencySymbol = configProvider.currencySymbol;
 
+    final apiDataTypes = vtuProvider.getDataTypesForNetwork(_selectedNetwork);
+
+    final List<Map<String, String>> dynamicTypeFilters = [
+      {'key': 'all', 'label': 'All Plans'},
+      ...apiDataTypes.map((dt) => {'key': dt.typeKey, 'label': dt.name}),
+    ];
+
     final filteredPlans = vtuProvider.dataPlans.where((plan) {
       if (_selectedTypeFilter == 'all') return true;
-      return plan.dataType.toLowerCase().contains(_selectedTypeFilter);
+      final target = _selectedTypeFilter.toLowerCase();
+      final pType = plan.dataType.toLowerCase();
+      final pLabel = plan.typeLabel.toLowerCase();
+      return pType == target || pType.contains(target) || pLabel.contains(target) || target.contains(pType);
     }).toList();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -215,6 +222,7 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
                         onTap: () {
                           setState(() {
                             _selectedNetwork = net['key'] as String;
+                            _selectedTypeFilter = 'all';
                             _selectedPlan = null;
                           });
                           vtuProvider.fetchDataPlans(net['key'] as String);
@@ -263,11 +271,11 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Data Type Filter 3D Chips
+              // Data Type Filter 3D Chips (Dynamically populated from /data/networks API)
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: _typeFilters.map((tf) {
+                  children: dynamicTypeFilters.map((tf) {
                     final isSelected = _selectedTypeFilter == tf['key'];
                     return Padding(
                       padding: const EdgeInsets.only(right: 10.0),
@@ -297,6 +305,7 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
                   }).toList(),
                 ),
               ),
+
               const SizedBox(height: 24),
 
               // Data Plans Catalog Grid

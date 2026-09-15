@@ -26,7 +26,7 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
     {'key': 'mtn', 'name': 'MTN', 'color': const Color(0xFFFACC15)},
     {'key': 'airtel', 'name': 'Airtel', 'color': const Color(0xFFEF4444)},
     {'key': 'glo', 'name': 'Glo', 'color': const Color(0xFF10B981)},
-    {'key': '9mobile', 'name': '9mobile', 'color': const Color(0xFF84CC16)},
+    {'key': 'etisalat', 'name': '9mobile', 'color': const Color(0xFF84CC16)},
   ];
 
   @override
