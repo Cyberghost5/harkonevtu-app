@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/specialized_provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
-import '../../providers/dashboard_provider.dart';
 import '../widgets/transaction_pin_modal.dart';
 
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
 import '../widgets/clay_text_field.dart';
+import '../transaction_status_screen.dart';
 
 class BettingTopupScreen extends StatefulWidget {
   const BettingTopupScreen({super.key});
@@ -106,52 +105,35 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
     );
   }
 
-  void _executeFunding(String customerId, double amount, String pin) async {
+  void _executeFunding(String customerId, double amount, String pin) {
     final platformKey = (_selectedPlatform?['key'] ?? 'bet9ja') as String;
+    final platformName = (_selectedPlatform?['name'] ?? 'Betting') as String;
     final specProvider = Provider.of<SpecializedProvider>(context, listen: false);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
-
     final customerName = specProvider.validatedCustomerName ?? 'Betting User';
 
-    final response = await specProvider.fundBetting(
-      platform: platformKey,
-      customerId: customerId,
-      amount: amount,
-      customerName: customerName,
-      pin: pin,
+    _customerIdController.clear();
+    _amountController.clear();
+    specProvider.clearValidation();
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionStatusScreen(
+          title: '$platformName Funding',
+          serviceType: 'Betting Wallet',
+          planName: platformName,
+          recipient: 'ID: $customerId ($customerName)',
+          amount: amount,
+          action: () => Provider.of<SpecializedProvider>(context, listen: false).fundBetting(
+            platform: platformKey,
+            customerId: customerId,
+            amount: amount,
+            customerName: customerName,
+            pin: pin,
+          ),
+        ),
+      ),
     );
-
-    if (!mounted) return;
-
-    if (response.status) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message.isNotEmpty ? response.message : 'Betting wallet funded successfully!'),
-          backgroundColor: const Color(0xFF10B981),
-        ),
-      );
-
-      _customerIdController.clear();
-      _amountController.clear();
-      specProvider.clearValidation();
-
-      await authProvider.fetchProfile();
-      await dashboardProvider.fetchDashboardData();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message),
-          backgroundColor: const Color(0xFFEF4444),
-        ),
-      );
-      final msg = response.message.toLowerCase();
-      if (msg.contains('pin') || msg.contains('incorrect') || msg.contains('invalid')) {
-        Future.delayed(const Duration(milliseconds: 350), () {
-          if (mounted) _submitOrder();
-        });
-      }
-    }
   }
 
   @override

@@ -7,12 +7,12 @@ import 'package:image_picker/image_picker.dart';
 import '../../providers/specialized_provider.dart';
 import '../../providers/app_config_provider.dart';
 import '../../core/utils/formatters.dart';
-import '../../providers/auth_provider.dart';
 
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
 import '../widgets/clay_text_field.dart';
 import '../widgets/transaction_pin_modal.dart';
+import '../transaction_status_screen.dart';
 
 class AirtimeToCashScreen extends StatefulWidget {
   const AirtimeToCashScreen({super.key});
@@ -32,10 +32,6 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (authProvider.user?.phone != null && authProvider.user!.phone.isNotEmpty) {
-        _phoneController.text = authProvider.user!.phone;
-      }
       Provider.of<SpecializedProvider>(context, listen: false).fetchAirtimeToCashSettings();
     });
   }
@@ -140,15 +136,16 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
     final settings = specProvider.airtimeToCashSettings;
     final minAmount = double.tryParse(settings?['min_amount']?.toString() ?? '1000') ?? 1000.0;
 
-    if (phone.length < 10 || amount < minAmount) {
+    if (phone.length != 11 || amount < minAmount) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please enter valid sender phone number and amount (Minimum ₦${minAmount.toStringAsFixed(0)}).'),
+          content: Text('Please enter a valid 11-digit sender phone number and amount (Minimum ₦${minAmount.toStringAsFixed(0)}).'),
           backgroundColor: const Color(0xFFEF4444),
         ),
       );
       return;
     }
+
 
     final currencySymbol = Provider.of<AppConfigProvider>(context, listen: false).currencySymbol;
 
@@ -164,46 +161,32 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
     );
   }
 
-  void _executeSubmission(String phone, double amount, String reference, String pin) async {
-    final specProvider = Provider.of<SpecializedProvider>(context, listen: false);
+  void _executeSubmission(String phone, double amount, String reference, String pin) {
+    final proofPath = _proofFile?.path;
+    _amountController.clear();
+    _referenceController.clear();
+    setState(() => _proofFile = null);
 
-    final response = await specProvider.submitAirtimeToCash(
-      network: _selectedNetwork,
-      phone: phone,
-      amount: amount,
-      proofPath: _proofFile?.path,
-      reference: reference.isNotEmpty ? reference : null,
-      pin: pin,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionStatusScreen(
+          title: 'Airtime to Cash',
+          serviceType: 'Airtime to Cash',
+          planName: '${_selectedNetwork.toUpperCase()} Conversion',
+          recipient: phone,
+          amount: amount,
+          action: () => Provider.of<SpecializedProvider>(context, listen: false).submitAirtimeToCash(
+            network: _selectedNetwork,
+            phone: phone,
+            amount: amount,
+            proofPath: proofPath,
+            reference: reference.isNotEmpty ? reference : null,
+            pin: pin,
+          ),
+        ),
+      ),
     );
-
-    if (!mounted) return;
-
-    if (response.status) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message.isNotEmpty
-              ? response.message
-              : 'Airtime to cash request submitted! Funds will credit your wallet upon transfer verification.'),
-          backgroundColor: const Color(0xFF10B981),
-        ),
-      );
-      _amountController.clear();
-      _referenceController.clear();
-      setState(() => _proofFile = null);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message),
-          backgroundColor: const Color(0xFFEF4444),
-        ),
-      );
-      final msg = response.message.toLowerCase();
-      if (msg.contains('pin') || msg.contains('incorrect') || msg.contains('invalid')) {
-        Future.delayed(const Duration(milliseconds: 350), () {
-          if (mounted) _submitRequest();
-        });
-      }
-    }
   }
 
   @override
@@ -407,6 +390,7 @@ class _AirtimeToCashScreenState extends State<AirtimeToCashScreen> {
                     ClayTextField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
+                      maxLength: 11,
                       hintText: 'e.g. 08012345678',
                       prefixIcon: const Icon(Icons.phone_android_rounded, color: Color(0xFF94A3B8)),
                     ),

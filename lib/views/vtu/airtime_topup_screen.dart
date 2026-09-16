@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/vtu_provider.dart';
 import '../../core/utils/formatters.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
-import '../../providers/dashboard_provider.dart';
 import '../widgets/transaction_pin_modal.dart';
 
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
 import '../widgets/clay_text_field.dart';
+import '../transaction_status_screen.dart';
 
 class AirtimeTopupScreen extends StatefulWidget {
   const AirtimeTopupScreen({super.key});
@@ -36,14 +34,8 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (authProvider.user?.phone != null && authProvider.user!.phone.isNotEmpty) {
-        _phoneController.text = authProvider.user!.phone;
-        _onPhoneChanged(authProvider.user!.phone);
-      }
-    });
   }
+
 
   @override
   void dispose() {
@@ -69,15 +61,16 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
     final amountText = _amountController.text.trim();
     final amount = double.tryParse(amountText) ?? 0.0;
 
-    if (phone.length < 10) {
+    if (phone.length != 11) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter a valid recipient phone number.'),
+          content: Text('Please enter a valid 11-digit recipient phone number.'),
           backgroundColor: Color(0xFFEF4444),
         ),
       );
       return;
     }
+
 
     if (amount < 50) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -103,46 +96,29 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
     );
   }
 
-  void _executeAirtimePurchase(String phone, double amount, String pin) async {
-    final vtuProvider = Provider.of<VtuProvider>(context, listen: false);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+  void _executeAirtimePurchase(String phone, double amount, String pin) {
+    _phoneController.clear();
+    _amountController.clear();
 
-    final response = await vtuProvider.purchaseAirtime(
-      network: _selectedNetwork,
-      phone: phone,
-      amount: amount,
-      pin: pin,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionStatusScreen(
+          title: '${_selectedNetwork.toUpperCase()} Airtime',
+          serviceType: 'Airtime',
+          recipient: phone,
+          amount: amount,
+          action: () => Provider.of<VtuProvider>(context, listen: false).purchaseAirtime(
+            network: _selectedNetwork,
+            phone: phone,
+            amount: amount,
+            pin: pin,
+          ),
+        ),
+      ),
     );
-
-    if (!mounted) return;
-
-    if (response.status) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message.isNotEmpty ? response.message : 'Airtime purchase successful!'),
-          backgroundColor: const Color(0xFF10B981),
-        ),
-      );
-      _phoneController.clear();
-      _amountController.clear();
-      await authProvider.fetchProfile();
-      await dashboardProvider.fetchDashboardData();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message),
-          backgroundColor: const Color(0xFFEF4444),
-        ),
-      );
-      final msg = response.message.toLowerCase();
-      if (msg.contains('pin') || msg.contains('incorrect') || msg.contains('invalid')) {
-        Future.delayed(const Duration(milliseconds: 350), () {
-          if (mounted) _submitOrder();
-        });
-      }
-    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -229,9 +205,11 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
               ClayTextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
+                maxLength: 11,
                 hintText: 'e.g. 08012345678',
                 prefixIcon: Icon(Icons.phone_android_rounded, color: subCol),
                 onChanged: _onPhoneChanged,
+
                 suffixIcon: vtuProvider.detectedNetwork != null
                     ? Padding(
                         padding: const EdgeInsets.all(10),

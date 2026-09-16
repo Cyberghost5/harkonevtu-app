@@ -59,7 +59,8 @@ class VtuProvider extends ChangeNotifier {
   }
 
   Future<String?> lookupNetwork(String phone) async {
-    if (phone.length < 10) return null;
+    if (phone.length < 11) return null;
+
     try {
       final response = await _apiClient.post('/airtime/network-lookup', data: {'phone': phone});
       if (response.status && response.data != null) {

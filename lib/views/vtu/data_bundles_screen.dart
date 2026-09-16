@@ -3,15 +3,14 @@ import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/vtu_provider.dart';
 import '../../core/utils/formatters.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
-import '../../providers/dashboard_provider.dart';
 import '../../models/data_plan_model.dart';
 import '../widgets/transaction_pin_modal.dart';
 
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
 import '../widgets/clay_text_field.dart';
+import '../transaction_status_screen.dart';
 
 class DataBundlesScreen extends StatefulWidget {
   const DataBundlesScreen({super.key});
@@ -23,7 +22,7 @@ class DataBundlesScreen extends StatefulWidget {
 class _DataBundlesScreenState extends State<DataBundlesScreen> {
   final _phoneController = TextEditingController();
   String _selectedNetwork = 'mtn';
-  String _selectedTypeFilter = 'all';
+  String _selectedTypeFilter = '';
   DataPlanModel? _selectedPlan;
 
   final List<Map<String, dynamic>> _networks = [
@@ -32,7 +31,6 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
     {'key': 'glo', 'name': 'Glo', 'color': const Color(0xFF10B981)},
     {'key': 'etisalat', 'name': '9mobile', 'color': const Color(0xFF84CC16)},
   ];
-
 
   @override
   void initState() {
@@ -43,7 +41,6 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
       _loadDataPlans();
     });
   }
-
 
   @override
   void dispose() {
@@ -67,6 +64,7 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
         if (_selectedNetwork != lower) {
           setState(() {
             _selectedNetwork = lower;
+            _selectedTypeFilter = '';
           });
           _loadDataPlans();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -94,15 +92,16 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
       return;
     }
 
-    if (phone.length < 10) {
+    if (phone.length != 11) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter a valid recipient phone number.'),
+          content: Text('Please enter a valid 11-digit recipient phone number.'),
           backgroundColor: Color(0xFFEF4444),
         ),
       );
       return;
     }
+
 
     final currencySymbol = Provider.of<AppConfigProvider>(context, listen: false).currencySymbol;
 
@@ -118,46 +117,32 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
     );
   }
 
-  void _executeDataPurchase(String phone, String pin) async {
-    final vtuProvider = Provider.of<VtuProvider>(context, listen: false);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+  void _executeDataPurchase(String phone, String pin) {
+    final plan = _selectedPlan;
+    if (plan == null) return;
 
-    final response = await vtuProvider.purchaseData(
-      planId: _selectedPlan!.id,
-      phone: phone,
-      pin: pin,
+    _phoneController.clear();
+    setState(() {
+      _selectedPlan = null;
+    });
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionStatusScreen(
+          title: '${_selectedNetwork.toUpperCase()} Data',
+          serviceType: 'Data Bundle',
+          planName: plan.planName,
+          recipient: phone,
+          amount: plan.price,
+          action: () => Provider.of<VtuProvider>(context, listen: false).purchaseData(
+            planId: plan.id,
+            phone: phone,
+            pin: pin,
+          ),
+        ),
+      ),
     );
-
-    if (!mounted) return;
-
-    if (response.status) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message.isNotEmpty ? response.message : 'Data bundle purchased successfully!'),
-          backgroundColor: const Color(0xFF10B981),
-        ),
-      );
-      _phoneController.clear();
-      setState(() {
-        _selectedPlan = null;
-      });
-      await authProvider.fetchProfile();
-      await dashboardProvider.fetchDashboardData();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message),
-          backgroundColor: const Color(0xFFEF4444),
-        ),
-      );
-      final msg = response.message.toLowerCase();
-      if (msg.contains('pin') || msg.contains('incorrect') || msg.contains('invalid')) {
-        Future.delayed(const Duration(milliseconds: 350), () {
-          if (mounted) _submitOrder();
-        });
-      }
-    }
   }
 
   @override
@@ -169,18 +154,34 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
 
     final apiDataTypes = vtuProvider.getDataTypesForNetwork(_selectedNetwork);
 
-    final List<Map<String, String>> dynamicTypeFilters = [
-      {'key': 'all', 'label': 'All Plans'},
-      ...apiDataTypes.map((dt) => {'key': dt.typeKey, 'label': dt.name}),
-    ];
+    List<Map<String, String>> dynamicTypeFilters = [];
+    if (apiDataTypes.isNotEmpty) {
+      dynamicTypeFilters = apiDataTypes.map((dt) => {'key': dt.typeKey, 'label': dt.name}).toList();
+    } else if (vtuProvider.dataPlans.isNotEmpty) {
+      final Map<String, String> typesMap = {};
+      for (var plan in vtuProvider.dataPlans) {
+        if (plan.dataType.isNotEmpty) {
+          typesMap[plan.dataType] = plan.typeLabel.isNotEmpty ? plan.typeLabel : plan.dataType.toUpperCase();
+        }
+      }
+      dynamicTypeFilters = typesMap.entries.map((e) => {'key': e.key, 'label': e.value}).toList();
+    }
+
+    if (dynamicTypeFilters.isNotEmpty) {
+      final exists = dynamicTypeFilters.any((f) => f['key'] == _selectedTypeFilter);
+      if (!exists) {
+        _selectedTypeFilter = dynamicTypeFilters.first['key']!;
+      }
+    }
 
     final filteredPlans = vtuProvider.dataPlans.where((plan) {
-      if (_selectedTypeFilter == 'all') return true;
+      if (_selectedTypeFilter.isEmpty) return true;
       final target = _selectedTypeFilter.toLowerCase();
       final pType = plan.dataType.toLowerCase();
       final pLabel = plan.typeLabel.toLowerCase();
       return pType == target || pType.contains(target) || pLabel.contains(target) || target.contains(pType);
     }).toList();
+
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleCol = Theme.of(context).colorScheme.onSurface;
@@ -265,6 +266,7 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
               ClayTextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
+                maxLength: 11,
                 hintText: 'e.g. 08012345678',
                 prefixIcon: Icon(Icons.phone_android_rounded, color: subCol),
                 onChanged: _onPhoneChanged,

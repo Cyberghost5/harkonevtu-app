@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/bills_provider.dart';
 import '../../core/utils/formatters.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
-import '../../providers/dashboard_provider.dart';
 import '../widgets/transaction_pin_modal.dart';
 
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
 import '../widgets/clay_text_field.dart';
+import '../transaction_status_screen.dart';
 
 class ExamPinsScreen extends StatefulWidget {
   const ExamPinsScreen({super.key});
@@ -42,12 +39,8 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final billsProvider = Provider.of<BillsProvider>(context, listen: false);
       billsProvider.fetchExamTypes();
-      if (authProvider.user?.phone != null && authProvider.user!.phone.isNotEmpty) {
-        _phoneController.text = authProvider.user!.phone;
-      }
     });
   }
 
@@ -59,15 +52,16 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
 
   void _submitOrder() {
     final phone = _phoneController.text.trim();
-    if (phone.isEmpty || phone.length < 10) {
+    if (phone.length != 11) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter a valid phone number.'),
+          content: Text('Please enter a valid 11-digit phone number.'),
           backgroundColor: Color(0xFFEF4444),
         ),
       );
       return;
     }
+
 
     final billsProvider = Provider.of<BillsProvider>(context, listen: false);
     final examTypes = _getExamTypes(billsProvider);
@@ -88,161 +82,37 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
     );
   }
 
-  void _executePurchase(dynamic examTypeId, String phone, String pin) async {
+  void _executePurchase(dynamic examTypeId, String phone, String pin) {
     final billsProvider = Provider.of<BillsProvider>(context, listen: false);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    final examTypes = _getExamTypes(billsProvider);
+    final safeIndex = _selectedExamIndex >= examTypes.length ? 0 : _selectedExamIndex;
+    final exam = examTypes[safeIndex];
+    final totalPrice = ((exam['price'] as num? ?? 0.0) * _quantity).toDouble();
+    final examName = (exam['name'] ?? 'Exam PIN') as String;
 
-    final response = await billsProvider.purchaseExamPin(
-      examTypeId: examTypeId,
-      quantity: _quantity,
-      phone: phone,
-      pin: pin,
-    );
+    _phoneController.clear();
+    final qty = _quantity;
+    setState(() {
+      _quantity = 1;
+    });
 
-    if (!mounted) return;
-
-    if (response.status) {
-      final tokensList = response.data?['tokens'] as List<dynamic>? ?? [];
-      _showPinsModal(tokensList);
-      _phoneController.clear();
-      setState(() {
-        _quantity = 1;
-      });
-
-      await authProvider.fetchProfile();
-      await dashboardProvider.fetchDashboardData();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message),
-          backgroundColor: const Color(0xFFEF4444),
-        ),
-      );
-      final msg = response.message.toLowerCase();
-      if (msg.contains('pin') || msg.contains('incorrect') || msg.contains('invalid')) {
-        Future.delayed(const Duration(milliseconds: 350), () {
-          if (mounted) _submitOrder();
-        });
-      }
-    }
-  }
-
-  void _showPinsModal(List<dynamic> tokens) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final primaryColor = Theme.of(context).primaryColor;
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-
-        return ClayContainer(
-          borderRadius: 24,
-          depth: 16,
-          color: isDark ? const Color(0xFF151C2C) : Colors.white,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ClayContainer(
-                borderRadius: 40,
-                depth: 8,
-                padding: const EdgeInsets.all(16),
-                color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                child: const Icon(Icons.school_rounded, size: 44, color: Color(0xFF10B981)),
-              ),
-              const SizedBox(height: 16),
-
-              Text(
-                'Exam PIN Purchased Successfully',
-                style: TextStyle(
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: tokens.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final item = tokens[index] as Map<String, dynamic>;
-                  final pinStr = item['pin']?.toString() ?? '';
-                  final serialStr = item['serial']?.toString() ?? '';
-
-                  return ClayContainer(
-                    borderRadius: 16,
-                    depth: 8,
-                    isRecessed: true,
-                    padding: const EdgeInsets.all(16),
-                    color: isDark ? const Color(0xFF131A29) : const Color(0xFFF1F5F9),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('PIN:', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
-                            SelectableText(
-                              pinStr,
-                              style: TextStyle(
-                                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (serialStr.isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Serial:', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
-                              SelectableText(
-                                serialStr,
-                                style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 12),
-                        ClayButton(
-                          text: 'Copy PIN Details',
-                          icon: Icons.copy_rounded,
-                          height: 42,
-                          borderRadius: 12,
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: 'PIN: $pinStr Serial: $serialStr'));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Exam PIN copied to clipboard!'),
-                                backgroundColor: primaryColor,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-
-              ClayButton(
-                text: 'Done',
-                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
-                textColor: primaryColor,
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionStatusScreen(
+          title: '$examName PIN',
+          serviceType: 'Exam PIN',
+          planName: '$examName (Qty: $qty)',
+          recipient: phone,
+          amount: totalPrice,
+          action: () => Provider.of<BillsProvider>(context, listen: false).purchaseExamPin(
+            examTypeId: examTypeId,
+            quantity: qty,
+            phone: phone,
+            pin: pin,
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -452,6 +322,7 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
               ClayTextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
+                maxLength: 11,
                 hintText: 'e.g. 08012345678',
                 prefixIcon: const Icon(Icons.phone_android_rounded, color: Color(0xFF94A3B8)),
               ),

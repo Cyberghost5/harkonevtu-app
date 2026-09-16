@@ -150,6 +150,7 @@ class _ProfileViewState extends State<ProfileView> {
                     ClayTextField(
                       controller: phoneController,
                       keyboardType: TextInputType.phone,
+                      maxLength: 11,
                       labelText: 'Phone Number',
                       prefixIcon: const Icon(Icons.phone_outlined, color: Color(0xFF94A3B8)),
                     ),
@@ -168,6 +169,13 @@ class _ProfileViewState extends State<ProfileView> {
                           });
                           return;
                         }
+                        if (phone.isNotEmpty && phone.length != 11) {
+                          setModalState(() {
+                            errorMessage = 'Please enter a valid 11-digit phone number.';
+                          });
+                          return;
+                        }
+
                         setModalState(() {
                           isSubmitting = true;
                           errorMessage = null;

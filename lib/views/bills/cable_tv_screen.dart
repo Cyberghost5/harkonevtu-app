@@ -12,6 +12,7 @@ import '../widgets/transaction_pin_modal.dart';
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
 import '../widgets/clay_text_field.dart';
+import '../transaction_status_screen.dart';
 
 class CableTvScreen extends StatefulWidget {
   const CableTvScreen({super.key});
@@ -31,10 +32,6 @@ class _CableTvScreenState extends State<CableTvScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (authProvider.user?.phone != null && authProvider.user!.phone.isNotEmpty) {
-        _phoneController.text = authProvider.user!.phone;
-      }
       final billsProvider = Provider.of<BillsProvider>(context, listen: false);
       await billsProvider.fetchCableProviders();
       _loadCablePlans();
@@ -107,15 +104,16 @@ class _CableTvScreenState extends State<CableTvScreen> {
     final smartcard = _smartcardController.text.trim();
     final phone = _phoneController.text.trim();
 
-    if (_selectedPlan == null || smartcard.isEmpty || phone.isEmpty) {
+    if (_selectedPlan == null || smartcard.isEmpty || phone.length != 11) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a package plan and enter smartcard number.'),
+          content: Text('Please enter a valid 11-digit phone number, select a package, and enter smartcard number.'),
           backgroundColor: Color(0xFFEF4444),
         ),
       );
       return;
     }
+
 
     final currencySymbol = Provider.of<AppConfigProvider>(context, listen: false).currencySymbol;
     final providers = _getProviders();
@@ -134,51 +132,39 @@ class _CableTvScreenState extends State<CableTvScreen> {
     );
   }
 
-  void _executePurchase(String smartcard, String phone, String pin) async {
+  void _executePurchase(String smartcard, String phone, String pin) {
     final providers = _getProviders();
     final safeIndex = _selectedProviderIndex < providers.length ? _selectedProviderIndex : 0;
     final providerId = providers[safeIndex]['id'];
-    final billsProvider = Provider.of<BillsProvider>(context, listen: false);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    final providerName = providers[safeIndex]['name'] ?? 'Cable TV';
+    final plan = _selectedPlan;
+    if (plan == null) return;
 
-    final response = await billsProvider.purchaseCable(
-      providerId: providerId,
-      planId: _selectedPlan!.id,
-      smartcard: smartcard,
-      phone: phone,
-      pin: pin,
+    _smartcardController.clear();
+    _phoneController.clear();
+    setState(() {
+      _selectedPlan = null;
+    });
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionStatusScreen(
+          title: '$providerName Subscription',
+          serviceType: 'Cable TV',
+          planName: '$providerName ${plan.name}',
+          recipient: 'IUC: $smartcard ($phone)',
+          amount: plan.price,
+          action: () => Provider.of<BillsProvider>(context, listen: false).purchaseCable(
+            providerId: providerId,
+            planId: plan.id,
+            smartcard: smartcard,
+            phone: phone,
+            pin: pin,
+          ),
+        ),
+      ),
     );
-
-    if (!mounted) return;
-
-    if (response.status) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message.isNotEmpty ? response.message : 'Cable TV subscription successful!'),
-          backgroundColor: const Color(0xFF10B981),
-        ),
-      );
-      _smartcardController.clear();
-      _phoneController.clear();
-      billsProvider.clearValidation();
-
-      await authProvider.fetchProfile();
-      await dashboardProvider.fetchDashboardData();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message),
-          backgroundColor: const Color(0xFFEF4444),
-        ),
-      );
-      final msg = response.message.toLowerCase();
-      if (msg.contains('pin') || msg.contains('incorrect') || msg.contains('invalid')) {
-        Future.delayed(const Duration(milliseconds: 350), () {
-          if (mounted) _submitOrder();
-        });
-      }
-    }
   }
 
   @override
@@ -432,6 +418,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
               ClayTextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
+                maxLength: 11,
                 hintText: 'e.g. 08012345678',
                 prefixIcon: const Icon(Icons.phone_android_rounded, color: Color(0xFF94A3B8)),
               ),

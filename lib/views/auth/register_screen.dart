@@ -183,9 +183,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ClayTextField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
+                  maxLength: 11,
                   labelText: 'Phone Number',
                   prefixIcon: const Icon(Icons.phone_outlined, color: Color(0xFF94A3B8)),
-                  validator: (v) => v == null || v.trim().length < 10 ? 'Enter a valid phone number' : null,
+                  validator: (v) => v == null || v.trim().length != 11 ? 'Enter a valid 11-digit phone number' : null,
                 ),
                 const SizedBox(height: 16),
 

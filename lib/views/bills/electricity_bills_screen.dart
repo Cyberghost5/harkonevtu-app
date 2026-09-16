@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/bills_provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
-import '../../providers/dashboard_provider.dart';
 import '../../models/disco_model.dart';
 import '../widgets/transaction_pin_modal.dart';
 
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
 import '../widgets/clay_text_field.dart';
+import '../transaction_status_screen.dart';
 
 class ElectricityBillsScreen extends StatefulWidget {
   const ElectricityBillsScreen({super.key});
@@ -31,11 +28,6 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (authProvider.user?.phone != null && authProvider.user!.phone.isNotEmpty) {
-        _phoneController.text = authProvider.user!.phone;
-      }
-
       final billsProvider = Provider.of<BillsProvider>(context, listen: false);
       billsProvider.fetchDiscos().then((_) {
         if (billsProvider.discos.isNotEmpty && mounted) {
@@ -101,15 +93,16 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
     final phone = _phoneController.text.trim();
     final amount = double.tryParse(amountText) ?? 0.0;
 
-    if (_selectedDisco == null || meter.isEmpty || amount < 500 || phone.isEmpty) {
+    if (_selectedDisco == null || meter.isEmpty || amount < 500 || phone.length != 11) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please complete all fields (Minimum amount ₦500).'),
+          content: Text('Please enter a valid 11-digit phone number and complete all fields (Minimum amount ₦500).'),
           backgroundColor: Color(0xFFEF4444),
         ),
       );
       return;
     }
+
 
     final currencySymbol = Provider.of<AppConfigProvider>(context, listen: false).currencySymbol;
 
@@ -125,141 +118,33 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
     );
   }
 
-  void _executePurchase(String meter, double amount, String phone, String pin) async {
-    final billsProvider = Provider.of<BillsProvider>(context, listen: false);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+  void _executePurchase(String meter, double amount, String phone, String pin) {
+    final disco = _selectedDisco;
+    if (disco == null) return;
 
-    final response = await billsProvider.purchaseElectricity(
-      discoId: _selectedDisco!.id,
-      meterNumber: meter,
-      meterType: _meterType,
-      amount: amount,
-      phone: phone,
-      pin: pin,
-    );
+    _meterController.clear();
+    _amountController.clear();
+    _phoneController.clear();
 
-    if (!mounted) return;
-
-    if (response.status) {
-      final tokenStr = response.data?['token']?.toString() ?? 'N/A';
-      final unitsStr = response.data?['units']?.toString() ?? '';
-
-      _showTokenModal(tokenStr, unitsStr);
-      _meterController.clear();
-      _amountController.clear();
-      billsProvider.clearValidation();
-
-      await authProvider.fetchProfile();
-      await dashboardProvider.fetchDashboardData();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(response.message),
-          backgroundColor: const Color(0xFFEF4444),
-        ),
-      );
-      final msg = response.message.toLowerCase();
-      if (msg.contains('pin') || msg.contains('incorrect') || msg.contains('invalid')) {
-        Future.delayed(const Duration(milliseconds: 350), () {
-          if (mounted) _submitOrder();
-        });
-      }
-    }
-  }
-
-  void _showTokenModal(String token, String units) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final primaryColor = Theme.of(context).primaryColor;
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-
-        return ClayContainer(
-          borderRadius: 24,
-          depth: 16,
-          color: isDark ? const Color(0xFF151C2C) : Colors.white,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ClayContainer(
-                borderRadius: 40,
-                depth: 8,
-                padding: const EdgeInsets.all(16),
-                color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                child: const Icon(Icons.bolt_rounded, size: 48, color: Color(0xFF10B981)),
-              ),
-              const SizedBox(height: 16),
-
-              Text(
-                'Electricity Token Generated',
-                style: TextStyle(
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (units.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'Units: $units',
-                  style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 14),
-                ),
-              ],
-              const SizedBox(height: 20),
-
-              // 3D Recessed Token Box
-              ClayContainer(
-                borderRadius: 16,
-                depth: 8,
-                isRecessed: true,
-                padding: const EdgeInsets.all(16),
-                color: isDark ? const Color(0xFF131A29) : const Color(0xFFF1F5F9),
-                child: Column(
-                  children: [
-                    SelectableText(
-                      token,
-                      style: TextStyle(
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2.0,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    ClayButton(
-                      text: 'Copy Token',
-                      icon: Icons.copy_rounded,
-                      height: 42,
-                      borderRadius: 12,
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: token));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Electricity token copied to clipboard!'),
-                            backgroundColor: primaryColor,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              ClayButton(
-                text: 'Done',
-                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
-                textColor: primaryColor,
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionStatusScreen(
+          title: '${disco.name} Electricity',
+          serviceType: 'Electricity Bill',
+          planName: '${disco.name} (${_meterType.toUpperCase()})',
+          recipient: 'Meter: $meter ($phone)',
+          amount: amount,
+          action: () => Provider.of<BillsProvider>(context, listen: false).purchaseElectricity(
+            discoId: disco.id,
+            meterNumber: meter,
+            meterType: _meterType,
+            amount: amount,
+            phone: phone,
+            pin: pin,
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -528,6 +413,7 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
               ClayTextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
+                maxLength: 11,
                 hintText: 'e.g. 08012345678',
                 prefixIcon: const Icon(Icons.phone_android_rounded, color: Color(0xFF94A3B8)),
               ),
