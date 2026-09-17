@@ -67,11 +67,12 @@ class NotificationService {
         },
       );
 
-      // 3. Create Android Notification Channel
+      // 3. Create Android Notification Channel & Request Android 13+ Permissions
       final androidPlugin = _localNotifications.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
         await androidPlugin.createNotificationChannel(_channel);
+        await androidPlugin.requestNotificationsPermission();
       }
 
       // 4. Handle Foreground Notifications
@@ -98,7 +99,7 @@ class NotificationService {
     if (notification != null) {
       _localNotifications.show(
         notification.hashCode,
-        notification.title ?? 'NMillenium Alert',
+        notification.title ?? 'Alert',
         notification.body ?? '',
         NotificationDetails(
           android: AndroidNotificationDetails(
@@ -141,13 +142,23 @@ class NotificationService {
       }
 
       debugPrint('[FCM] Syncing device token to backend: $token');
-      final response = await apiClient.post(
-        '/user/device-token',
-        data: {
-          'fcm_token': token,
-          'device_type': Platform.isIOS ? 'ios' : 'android',
-        },
-      );
+      final payload = {
+        'fcm_token': token,
+        'device_token': token,
+        'push_token': token,
+        'device_type': Platform.isIOS ? 'ios' : 'android',
+      };
+
+      var response = await apiClient.post('/user/device-token', data: payload);
+      if (!response.status) {
+        response = await apiClient.post('/user/fcm-token', data: payload);
+      }
+      if (!response.status) {
+        response = await apiClient.post('/user/push-token', data: payload);
+      }
+      if (!response.status) {
+        response = await apiClient.post('/user/profile', data: payload);
+      }
       debugPrint('[FCM] Sync response: status=${response.status}, message=${response.message}');
     } catch (e) {
       developer.log('Device token sync error: $e');

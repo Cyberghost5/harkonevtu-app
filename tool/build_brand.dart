@@ -187,12 +187,28 @@ storeFile=upload-keystore.jks
     }
   }
 
-  // 8.5. Copy unique brand Android Keystore & key.properties if present
+  // 8.5. Copy unique brand Android Keystore, key.properties, and Firebase config files
   final customKeyProp = File('${brandDir.path}/key.properties');
   final targetKeyProp = File('android/key.properties');
   if (customKeyProp.existsSync()) {
     print('🔑 Copying unique brand key.properties -> ${targetKeyProp.path}');
     if (!isDryRun) customKeyProp.copySync(targetKeyProp.path);
+  }
+
+  // Copy google-services.json if present
+  final brandGoogleServices = File('${brandDir.path}/google-services.json');
+  final targetGoogleServices = File('android/app/google-services.json');
+  if (brandGoogleServices.existsSync()) {
+    print('🔥 Copying brand google-services.json -> ${targetGoogleServices.path}');
+    if (!isDryRun) brandGoogleServices.copySync(targetGoogleServices.path);
+  }
+
+  // Copy GoogleService-Info.plist if present
+  final brandIosServices = File('${brandDir.path}/GoogleService-Info.plist');
+  final targetIosServices = File('ios/Runner/GoogleService-Info.plist');
+  if (brandIosServices.existsSync()) {
+    print('🔥 Copying brand GoogleService-Info.plist -> ${targetIosServices.path}');
+    if (!isDryRun) brandIosServices.copySync(targetIosServices.path);
   }
 
   // Search for any .jks files in brandDir
