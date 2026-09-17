@@ -148,7 +148,7 @@ class ReceiptModal extends StatelessWidget {
                   Text(
                     'Token',
                     style: TextStyle(
-                      color: subColor,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.1,

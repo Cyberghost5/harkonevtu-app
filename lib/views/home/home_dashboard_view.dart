@@ -808,6 +808,8 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
       );
     }
 
+    final list = dashboardProvider.recentTransactions;
+
     if (list.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(28),
