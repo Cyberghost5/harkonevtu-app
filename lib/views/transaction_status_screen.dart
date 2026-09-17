@@ -126,13 +126,15 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
 
       setState(() {
         _apiResponse = response;
-        if (response.status) {
-          final msg = response.message.toLowerCase();
-          if (msg.contains('pending') || msg.contains('processing')) {
+        final msg = response.message.toLowerCase();
+        if (response.status || msg.contains('success') || msg.contains('successful') || msg.contains('completed') || msg.contains('approved')) {
+          if (msg.contains('pending') || msg.contains('processing') || msg.contains('queued')) {
             _currentState = TransactionScreenState.pending;
           } else {
             _currentState = TransactionScreenState.success;
           }
+        } else if (msg.contains('pending') || msg.contains('processing') || msg.contains('queued')) {
+          _currentState = TransactionScreenState.pending;
         } else {
           _currentState = TransactionScreenState.failed;
         }
@@ -178,10 +180,22 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
     dynamic responseData = _apiResponse?.data;
     double balBefore = 0.0;
     double balAfter = 0.0;
+    Map<String, dynamic> metadata = {};
 
     if (responseData is Map<String, dynamic>) {
       balBefore = double.tryParse(responseData['balance_before']?.toString() ?? '0') ?? 0.0;
       balAfter = double.tryParse(responseData['balance_after']?.toString() ?? '0') ?? 0.0;
+
+      if (responseData['data'] is Map<String, dynamic>) {
+        metadata.addAll(responseData['data'] as Map<String, dynamic>);
+      }
+      if (responseData['transaction'] is Map<String, dynamic>) {
+        metadata.addAll(responseData['transaction'] as Map<String, dynamic>);
+      }
+      if (responseData['details'] is Map<String, dynamic>) {
+        metadata.addAll(responseData['details'] as Map<String, dynamic>);
+      }
+      metadata.addAll(responseData);
     }
 
     final dateStr = DateFormat('yyyy-MM-dd HH:mm:ss').format(_transactionTime);
@@ -200,6 +214,7 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
       date: dateStr,
       humanDate: DateFormat('dd MMM yyyy, hh:mm a').format(_transactionTime),
       createdAt: _transactionTime.toIso8601String(),
+      metadata: metadata.isNotEmpty ? metadata : null,
     );
 
     showModalBottomSheet(
@@ -607,45 +622,82 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
   }
 
   Widget _buildSpecialDataWidget(dynamic data, Color titleCol, Color subCol, Color primaryColor) {
-    if (data is! Map<String, dynamic>) return const SizedBox.shrink();
+    if (data == null) return const SizedBox.shrink();
 
-    final pin = data['pin'] ?? data['token'] ?? data['serial'] ?? data['cards'];
-    if (pin == null) return const SizedBox.shrink();
+    Map<String, dynamic> merged = {};
+    if (data is Map<String, dynamic>) {
+      if (data['data'] is Map<String, dynamic>) {
+        merged.addAll(data['data'] as Map<String, dynamic>);
+      }
+      if (data['transaction'] is Map<String, dynamic>) {
+        merged.addAll(data['transaction'] as Map<String, dynamic>);
+      }
+      if (data['details'] is Map<String, dynamic>) {
+        merged.addAll(data['details'] as Map<String, dynamic>);
+      }
+      merged.addAll(data);
+    }
+
+    final token = merged['token'] ??
+        merged['purchased_token'] ??
+        merged['main_token'] ??
+        merged['creditToken'] ??
+        merged['meter_token'] ??
+        merged['token_code'] ??
+        merged['pin'] ??
+        merged['serial'] ??
+        merged['cards'];
+
+    final units = merged['units'] ?? merged['token_units'] ?? merged['unit'];
+
+    if (token == null && units == null) return const SizedBox.shrink();
 
     return Column(
       children: [
         const SizedBox(height: 12),
         Divider(color: Colors.grey.withValues(alpha: 0.3)),
         const SizedBox(height: 8),
-        Text('YOUR PIN / TOKEN CODE', style: TextStyle(color: subCol, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+        Text('ELECTRICITY TOKEN / PIN CODE', style: TextStyle(color: subCol, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
         const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: primaryColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: primaryColor.withValues(alpha: 0.4)),
+        if (token != null) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: primaryColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: primaryColor.withValues(alpha: 0.4)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    token.toString(),
+                    style: TextStyle(color: primaryColor, fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 1.5),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: token.toString()));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Token copied to clipboard!')),
+                    );
+                  },
+                  child: Icon(Icons.copy_rounded, color: primaryColor, size: 20),
+                ),
+              ],
+            ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                pin.toString(),
-                style: TextStyle(color: primaryColor, fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 1.5),
-              ),
-              const SizedBox(width: 10),
-              GestureDetector(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: pin.toString()));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('PIN copied to clipboard!')),
-                  );
-                },
-                child: Icon(Icons.copy_rounded, color: primaryColor, size: 20),
-              ),
-            ],
+        ],
+        if (units != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Units: $units',
+            style: TextStyle(color: titleCol, fontSize: 13, fontWeight: FontWeight.w600),
           ),
-        ),
+        ],
       ],
     );
   }

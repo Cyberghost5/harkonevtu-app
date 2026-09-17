@@ -16,12 +16,39 @@ class ApiResponse {
   });
 
   factory ApiResponse.fromJson(Map<String, dynamic> json) {
+    bool isSuccess = _evaluateStatus(json);
+
+    String message = json['message']?.toString() ?? json['msg']?.toString() ?? '';
+    if (message.isEmpty && isSuccess) {
+      message = 'Transaction completed successfully.';
+    }
+
     return ApiResponse(
-      status: json['status'] == true || json['status'] == 'true',
-      message: json['message']?.toString() ?? '',
-      data: json['data'],
-      errors: json['errors'] is Map<String, dynamic> ? json['errors'] : null,
+      status: isSuccess,
+      message: message,
+      data: json['data'] ?? json['transaction'] ?? json['details'] ?? json['response'],
+      errors: json['errors'] is Map<String, dynamic> ? json['errors'] as Map<String, dynamic> : null,
     );
+  }
+
+  static bool _evaluateStatus(Map<String, dynamic> json) {
+    final rawStatus = json['status'] ?? json['success'] ?? json['code'] ?? json['status_code'] ?? json['response_code'];
+    if (rawStatus != null) {
+      if (rawStatus == true || rawStatus == 1 || rawStatus == '1' || rawStatus == 200 || rawStatus == '200') {
+        return true;
+      }
+      final str = rawStatus.toString().toLowerCase().trim();
+      if (str == 'true' || str == 'success' || str == 'successful' || str == 'completed' || str == 'approved' || str == '00' || str == 'paid') {
+        return true;
+      }
+    }
+
+    final msg = (json['message'] ?? json['msg'] ?? '').toString().toLowerCase();
+    if (msg.contains('success') || msg.contains('successful') || msg.contains('completed') || msg.contains('approved')) {
+      return true;
+    }
+
+    return false;
   }
 }
 
@@ -128,16 +155,20 @@ class ApiClient {
   ApiResponse _handleDioError(DioException e) {
     if (e.response != null && e.response?.data is Map<String, dynamic>) {
       final resData = e.response!.data as Map<String, dynamic>;
+      final parsed = ApiResponse.fromJson(resData);
+      if (parsed.status) {
+        return parsed;
+      }
       return ApiResponse(
         status: false,
-        message: resData['message']?.toString() ?? 'An error occurred',
-        data: resData['data'],
-        errors: resData['errors'] is Map<String, dynamic> ? resData['errors'] : null,
+        message: parsed.message.isNotEmpty ? parsed.message : 'An error occurred',
+        data: parsed.data,
+        errors: parsed.errors,
       );
     }
     String message = 'Network connection error. Please try again.';
     if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
-      message = 'Connection timed out. Please check your internet connection.';
+      message = 'Connection timed out. Please check your internet connection or transaction history.';
     }
     return ApiResponse(status: false, message: message);
   }

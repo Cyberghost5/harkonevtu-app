@@ -787,23 +787,26 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
 
   Widget _buildRecentTransactionsList(
       BuildContext context, DashboardProvider dashboardProvider, String currencySymbol) {
-    if (dashboardProvider.isLoadingTransactions) {
-      return Container(
-        height: 120,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Center(child: SpinKitThreeBounce(color: Theme.of(context).primaryColor, size: 20)),
-      );
-    }
-
-    final list = dashboardProvider.recentTransactions;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = Theme.of(context).cardColor;
     final borderCol = isDark ? const Color(0xFF232D42) : const Color(0xFFE2E8F0);
     final titleCol = Theme.of(context).colorScheme.onSurface;
     final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    if (dashboardProvider.isLoadingTransactions) {
+      return ClayContainer(
+        borderRadius: 16,
+        depth: 6,
+        padding: const EdgeInsets.symmetric(vertical: 36),
+        color: cardBg,
+        child: Center(
+          child: SpinKitThreeBounce(
+            color: Theme.of(context).primaryColor,
+            size: 20,
+          ),
+        ),
+      );
+    }
 
     if (list.isEmpty) {
       return Container(

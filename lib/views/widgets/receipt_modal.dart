@@ -132,6 +132,75 @@ class ReceiptModal extends StatelessWidget {
           _buildRow('Balance Before', AppFormatters.formatCurrency(transaction.balanceBefore, currencySymbol), context: context),
           _buildRow('Balance After', AppFormatters.formatCurrency(transaction.balanceAfter, currencySymbol), context: context),
 
+          // Token / PIN Display Box on Receipt
+          if (transaction.token != null && transaction.token!.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: statusColor.withValues(alpha: 0.4)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Token',
+                    style: TextStyle(
+                      color: subColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          transaction.token!,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {
+                          Clipboard.setData(ClipboardData(text: transaction.token!));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Token copied to clipboard!'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        child: Icon(Icons.copy_rounded, color: statusColor, size: 20),
+                      ),
+                    ],
+                  ),
+                  if (transaction.units != null && transaction.units!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Units: ${transaction.units}',
+                      style: TextStyle(
+                        color: titleColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: 24),
 
           // 3D Pressable Clay Close Button

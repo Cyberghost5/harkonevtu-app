@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/storage/secure_storage_service.dart';
 import '../../providers/app_config_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import 'clay_container.dart';
@@ -22,7 +23,42 @@ class NotificationModal extends StatefulWidget {
 }
 
 class _NotificationModalState extends State<NotificationModal> {
-  bool _clearAll = false;
+  bool _isLoading = true;
+  Set<String> _clearedNotificationIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadClearedState();
+  }
+
+  Future<void> _loadClearedState() async {
+    final clearedIds = await SecureStorageService().getClearedNotificationIds();
+    if (mounted) {
+      setState(() {
+        _clearedNotificationIds = clearedIds.toSet();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _handleClearAll(List<Map<String, dynamic>> currentNotifications) async {
+    final allIds = currentNotifications.map((n) => n['id'].toString()).toSet();
+    final newCleared = {..._clearedNotificationIds, ...allIds};
+    setState(() {
+      _clearedNotificationIds = newCleared;
+    });
+    await SecureStorageService().setHasClearedAllNotifications(true);
+    await SecureStorageService().saveClearedNotificationIds(newCleared.toList());
+  }
+
+  Future<void> _handleDismissSingle(String id) async {
+    final newCleared = {..._clearedNotificationIds, id};
+    setState(() {
+      _clearedNotificationIds = newCleared;
+    });
+    await SecureStorageService().saveClearedNotificationIds(newCleared.toList());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,47 +71,49 @@ class _NotificationModalState extends State<NotificationModal> {
     final appConfigProvider = Provider.of<AppConfigProvider>(context, listen: false);
     final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
 
-    final List<Map<String, dynamic>> notifications = [];
+    final List<Map<String, dynamic>> rawNotifications = [];
 
-    if (!_clearAll) {
-      // System Maintenance / Announcement item
-      if (appConfigProvider.isMaintenance) {
-        notifications.add({
-          'id': 'maint',
-          'title': 'System Maintenance',
-          'body': appConfigProvider.maintenanceMessage,
-          'time': 'Active Now',
-          'icon': Icons.warning_amber_rounded,
-          'color': Colors.amber,
-          'isUnread': true,
-        });
-      }
-
-      // Default welcome notification
-      notifications.add({
-        'id': 'welcome',
-        'title': 'Welcome to ${appConfigProvider.appName} 👋',
-        'body': 'Enjoy seamless bill payments, instant airtime, data top-ups and wallet transfers!',
-        'time': 'Just now',
-        'icon': Icons.stars_rounded,
-        'color': primaryColor,
+    // System Maintenance / Announcement item
+    if (appConfigProvider.isMaintenance) {
+      rawNotifications.add({
+        'id': 'maint',
+        'title': 'System Maintenance',
+        'body': appConfigProvider.maintenanceMessage,
+        'time': 'Active Now',
+        'icon': Icons.warning_amber_rounded,
+        'color': Colors.amber,
         'isUnread': true,
       });
-
-      // Recent transaction notifications
-      for (final tx in dashboardProvider.recentTransactions.take(4)) {
-        final isCredit = tx.type.toLowerCase() == 'credit';
-        notifications.add({
-          'id': 'tx_${tx.id}',
-          'title': '${tx.type.toUpperCase()}: ${tx.serviceType.toUpperCase()}',
-          'body': '${tx.description} - ${appConfigProvider.currencySymbol}${tx.amount}',
-          'time': tx.formattedDate,
-          'icon': isCredit ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-          'color': isCredit ? Colors.green : Colors.orange,
-          'isUnread': false,
-        });
-      }
     }
+
+    // Default welcome notification
+    rawNotifications.add({
+      'id': 'welcome',
+      'title': 'Welcome to ${appConfigProvider.appName} 👋',
+      'body': 'Enjoy seamless bill payments, instant airtime, data top-ups and wallet transfers!',
+      'time': 'Just now',
+      'icon': Icons.stars_rounded,
+      'color': primaryColor,
+      'isUnread': true,
+    });
+
+    // Recent transaction notifications
+    for (final tx in dashboardProvider.recentTransactions.take(4)) {
+      final isCredit = tx.type.toLowerCase() == 'credit';
+      rawNotifications.add({
+        'id': 'tx_${tx.id}',
+        'title': '${tx.type.toUpperCase()}: ${tx.serviceType.toUpperCase()}',
+        'body': '${tx.description} - ${appConfigProvider.currencySymbol}${tx.amount}',
+        'time': tx.formattedDate,
+        'icon': isCredit ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+        'color': isCredit ? Colors.green : Colors.orange,
+        'isUnread': false,
+      });
+    }
+
+    final notifications = rawNotifications
+        .where((n) => !_clearedNotificationIds.contains(n['id'].toString()))
+        .toList();
 
     return Container(
       constraints: BoxConstraints(
@@ -138,13 +176,9 @@ class _NotificationModalState extends State<NotificationModal> {
                       ),
                     ],
                   ),
-                  if (notifications.isNotEmpty)
+                  if (!_isLoading && notifications.isNotEmpty)
                     TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _clearAll = true;
-                        });
-                      },
+                      onPressed: () => _handleClearAll(notifications),
                       child: Text(
                         'Clear all',
                         style: TextStyle(
@@ -159,7 +193,14 @@ class _NotificationModalState extends State<NotificationModal> {
               const SizedBox(height: 16),
 
               // Content list
-              if (notifications.isEmpty)
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (notifications.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 40),
                   child: Center(
@@ -208,80 +249,106 @@ class _NotificationModalState extends State<NotificationModal> {
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final item = notifications[index];
+                      final itemId = item['id'].toString();
                       final Color itemColor = item['color'] as Color;
 
-                      return ClayContainer(
-                        borderRadius: 18,
-                        depth: 6,
-                        padding: const EdgeInsets.all(14),
-                        color: isDark ? const Color(0xFF1E283C) : Colors.white,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: itemColor.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(14),
+                      return Dismissible(
+                        key: Key(itemId),
+                        direction: DismissDirection.endToStart,
+                        onDismissed: (_) => _handleDismissSingle(itemId),
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent.withValues(alpha: 0.8),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: const Icon(Icons.delete_outline, color: Colors.white),
+                        ),
+                        child: ClayContainer(
+                          borderRadius: 18,
+                          depth: 6,
+                          padding: const EdgeInsets.all(14),
+                          color: isDark ? const Color(0xFF1E283C) : Colors.white,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: itemColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Icon(
+                                  item['icon'] as IconData,
+                                  color: itemColor,
+                                  size: 20,
+                                ),
                               ),
-                              child: Icon(
-                                item['icon'] as IconData,
-                                color: itemColor,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          item['title'] as String,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 14,
-                                            color: textColor,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            item['title'] as String,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14,
+                                              color: textColor,
+                                            ),
                                           ),
                                         ),
+                                        if (item['isUnread'] == true)
+                                          Container(
+                                            margin: const EdgeInsets.only(left: 6),
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              color: primaryColor,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      item['body'] as String,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: subtextColor,
+                                        height: 1.3,
                                       ),
-                                      if (item['isUnread'] == true)
-                                        Container(
-                                          margin: const EdgeInsets.only(left: 6),
-                                          width: 8,
-                                          height: 8,
-                                          decoration: BoxDecoration(
-                                            color: primaryColor,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    item['body'] as String,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: subtextColor,
-                                      height: 1.3,
                                     ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    item['time'] as String,
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                      color: subtextColor.withValues(alpha: 0.7),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      item['time'] as String,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
+                                        color: subtextColor.withValues(alpha: 0.7),
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                              GestureDetector(
+                                onTap: () => _handleDismissSingle(itemId),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 8, top: 2),
+                                  child: Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: subtextColor.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -305,3 +372,4 @@ class _NotificationModalState extends State<NotificationModal> {
     );
   }
 }
+

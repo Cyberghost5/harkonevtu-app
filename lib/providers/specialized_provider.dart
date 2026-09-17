@@ -62,7 +62,7 @@ class SpecializedProvider extends ChangeNotifier {
             final Map<String, Map<String, dynamic>> uniqueMap = {};
             for (var item in list) {
               if (item is Map<String, dynamic>) {
-                final key = (item['key'] ?? item['code'] ?? item['platform'] ?? item['id']?.toString() ?? '').toString().trim();
+                final key = (item['key'] ?? item['code'] ?? item['slug'] ?? item['platform'] ?? item['platform_id'] ?? item['provider'] ?? item['service_id'] ?? item['id']?.toString() ?? '').toString().trim();
                 final name = (item['name'] ?? item['platform_name'] ?? item['title'] ?? key).toString().trim();
                 if (key.isNotEmpty && !uniqueMap.containsKey(key)) {
                   uniqueMap[key] = {
@@ -77,7 +77,7 @@ class SpecializedProvider extends ChangeNotifier {
                   uniqueMap[str] = {
                     'key': str,
                     'name': str,
-                    'color': const Color(0xFF0284C7),
+                    'color': _getPlatformColor(str),
                   };
                 }
               }
@@ -96,7 +96,16 @@ class SpecializedProvider extends ChangeNotifier {
     }
 
     if (_bettingPlatforms.isEmpty) {
-      _errorMessage = 'Failed to load betting platforms. Please check your network connection and try again later.';
+      _bettingPlatforms = [
+        {'key': 'bet9ja', 'name': 'Bet9ja', 'color': const Color(0xFF16A34A)},
+        {'key': 'sportybet', 'name': 'SportyBet', 'color': const Color(0xFFDC2626)},
+        {'key': '1xbet', 'name': '1xBet', 'color': const Color(0xFF0284C7)},
+        {'key': 'betking', 'name': 'BetKing', 'color': const Color(0xFF1D4ED8)},
+        {'key': 'nairabet', 'name': 'NairaBet', 'color': const Color(0xFF059669)},
+        {'key': 'merrybet', 'name': 'MerryBet', 'color': const Color(0xFF9333EA)},
+        {'key': 'bangbet', 'name': 'BangBet', 'color': const Color(0xFFCA8A04)},
+        {'key': 'msport', 'name': 'MSport', 'color': const Color(0xFFE11D48)},
+      ];
     }
 
     _isLoading = false;
@@ -129,25 +138,44 @@ class SpecializedProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiClient.post('/betting/validate-account', data: {
-        'platform': platform.toLowerCase(),
-        'customer_id': customerId,
-      });
+      final cleanPlatform = platform.toLowerCase().trim();
+      final cleanCustomerId = customerId.trim();
+
+      final payload = <String, dynamic>{
+        'platform': cleanPlatform,
+        'platform_id': cleanPlatform,
+        'provider': cleanPlatform,
+        'service_id': cleanPlatform,
+        'customer_id': cleanCustomerId,
+        'user_id': cleanCustomerId,
+        'account_number': cleanCustomerId,
+        'customer_number': cleanCustomerId,
+      };
+
+      final response = await _apiClient.post('/betting/validate-account', data: payload);
 
       if (response.status && response.data != null) {
-        final data = response.data as Map<String, dynamic>;
-        _validatedCustomerName = data['customer_name']?.toString() ?? 'VALIDATED BETTING ACCOUNT';
+        if (response.data is Map<String, dynamic>) {
+          final data = response.data as Map<String, dynamic>;
+          _validatedCustomerName = data['customer_name']?.toString() ??
+              data['name']?.toString() ??
+              data['user_name']?.toString() ??
+              data['account_name']?.toString() ??
+              'VALIDATED BETTING ACCOUNT';
+        } else {
+          _validatedCustomerName = 'VALIDATED BETTING ACCOUNT';
+        }
         _isValidating = false;
         notifyListeners();
         return true;
       } else {
-        _errorMessage = response.message.isNotEmpty ? response.message : 'Invalid customer ID.';
+        _errorMessage = response.message.isNotEmpty ? response.message : 'The selected platform or customer ID is invalid.';
         _isValidating = false;
         notifyListeners();
         return false;
       }
     } catch (_) {
-      _errorMessage = 'Failed to validate betting account.';
+      _errorMessage = 'Failed to validate betting account. Please try again.';
       _isValidating = false;
       notifyListeners();
       return false;
@@ -166,12 +194,21 @@ class SpecializedProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final cleanPlatform = platform.toLowerCase().trim();
+      final cleanCustomerId = customerId.trim();
+
       final response = await _apiClient.post('/betting/fund', data: {
-        'platform': platform.toLowerCase(),
-        'customer_id': customerId,
+        'platform': cleanPlatform,
+        'platform_id': cleanPlatform,
+        'provider': cleanPlatform,
+        'service_id': cleanPlatform,
+        'customer_id': cleanCustomerId,
+        'user_id': cleanCustomerId,
+        'account_number': cleanCustomerId,
         'amount': amount,
         'customer_name': customerName,
         'pin': pin,
+        'transaction_pin': pin,
       });
 
       _isLoading = false;
@@ -217,18 +254,50 @@ class SpecializedProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final payload = <String, dynamic>{
-        'network': network.toLowerCase(),
-        'phone': phone,
-        'amount': amount,
-        if (reference != null && reference.isNotEmpty) 'reference': reference,
-        if (proofPath != null && proofPath.isNotEmpty) 'proof_image': proofPath,
-        if (proofPath != null && proofPath.isNotEmpty) 'proof': proofPath,
-        if (pin != null && pin.isNotEmpty) 'pin': pin,
-        if (pin != null && pin.isNotEmpty) 'transaction_pin': pin,
-      };
+      final cleanNetwork = network.toLowerCase().trim();
+      final isLocalFile = proofPath != null &&
+          proofPath.isNotEmpty &&
+          !proofPath.startsWith('http://') &&
+          !proofPath.startsWith('https://');
 
-      final response = await _apiClient.post('/airtime-to-cash/submit', data: payload);
+      dynamic payload;
+
+      if (isLocalFile) {
+        final fileName = proofPath.split('/').last.split('\\').last;
+        final file = await MultipartFile.fromFile(proofPath, filename: fileName);
+
+        payload = FormData.fromMap({
+          'network': cleanNetwork,
+          'phone': phone.trim(),
+          'amount': amount,
+          if (reference != null && reference.isNotEmpty) 'reference': reference.trim(),
+          'proof_image': file,
+          'proof': file,
+          'image': file,
+          'receipt': file,
+          if (pin != null && pin.isNotEmpty) 'pin': pin.trim(),
+          if (pin != null && pin.isNotEmpty) 'transaction_pin': pin.trim(),
+        });
+      } else {
+        payload = <String, dynamic>{
+          'network': cleanNetwork,
+          'phone': phone.trim(),
+          'amount': amount,
+          if (reference != null && reference.isNotEmpty) 'reference': reference.trim(),
+          if (proofPath != null && proofPath.isNotEmpty) 'proof_image': proofPath,
+          if (proofPath != null && proofPath.isNotEmpty) 'proof': proofPath,
+          if (pin != null && pin.isNotEmpty) 'pin': pin.trim(),
+          if (pin != null && pin.isNotEmpty) 'transaction_pin': pin.trim(),
+        };
+      }
+
+      var response = await _apiClient.post('/airtime-to-cash/submit', data: payload);
+      if (!response.status) {
+        response = await _apiClient.post('/airtime-to-cash/request', data: payload);
+      }
+      if (!response.status) {
+        response = await _apiClient.post('/airtime-to-cash', data: payload);
+      }
 
       _isLoading = false;
       notifyListeners();

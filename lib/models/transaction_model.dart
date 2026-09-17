@@ -41,6 +41,26 @@ class TransactionModel {
     return '${serviceType.toUpperCase()} Transaction';
   }
 
+  String? get token {
+    if (metadata == null) return null;
+    final val = metadata!['token'] ??
+        metadata!['purchased_token'] ??
+        metadata!['main_token'] ??
+        metadata!['creditToken'] ??
+        metadata!['meter_token'] ??
+        metadata!['token_code'] ??
+        metadata!['pin'] ??
+        metadata!['serial'] ??
+        metadata!['cards'];
+    return val?.toString();
+  }
+
+  String? get units {
+    if (metadata == null) return null;
+    final val = metadata!['units'] ?? metadata!['token_units'] ?? metadata!['unit'];
+    return val?.toString();
+  }
+
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
     double parseDouble(dynamic val) {
       if (val == null) return 0.0;
@@ -50,6 +70,32 @@ class TransactionModel {
 
     final rawDate = json['created_at'] ?? json['date'] ?? json['human_date'] ?? '';
     final formattedDateStr = AppFormatters.formatDate(rawDate);
+
+    Map<String, dynamic> meta = {};
+    if (json['metadata'] is Map<String, dynamic>) {
+      meta.addAll(json['metadata'] as Map<String, dynamic>);
+    }
+
+    for (final k in [
+      'token',
+      'purchased_token',
+      'main_token',
+      'creditToken',
+      'meter_token',
+      'token_code',
+      'pin',
+      'serial',
+      'units',
+      'token_units',
+      'unit',
+      'meter_number',
+      'smartcard',
+      'customer_name'
+    ]) {
+      if (json[k] != null && !meta.containsKey(k)) {
+        meta[k] = json[k];
+      }
+    }
 
     return TransactionModel(
       id: json['id'] ?? 0,
@@ -64,7 +110,7 @@ class TransactionModel {
       date: json['date'] ?? '',
       humanDate: json['human_date'] ?? '',
       createdAt: formattedDateStr,
-      metadata: json['metadata'] is Map<String, dynamic> ? json['metadata'] : null,
+      metadata: meta.isNotEmpty ? meta : null,
     );
   }
 }

@@ -53,7 +53,7 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
     final activePlatforms = specProvider.bettingPlatforms;
     if (activePlatforms.isEmpty) return;
     final safeIndex = (_selectedPlatformIndex >= 0 && _selectedPlatformIndex < activePlatforms.length) ? _selectedPlatformIndex : 0;
-    final platform = (activePlatforms[safeIndex]['key'] ?? 'bet9ja') as String;
+    final platform = (activePlatforms[safeIndex]['key'] ?? activePlatforms[safeIndex]['code'] ?? activePlatforms[safeIndex]['id'] ?? 'bet9ja').toString();
 
     final success = await specProvider.validateBettingAccount(
       platform: platform,
@@ -118,8 +118,8 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
     final activePlatforms = specProvider.bettingPlatforms;
     if (activePlatforms.isEmpty) return;
     final safeIndex = (_selectedPlatformIndex >= 0 && _selectedPlatformIndex < activePlatforms.length) ? _selectedPlatformIndex : 0;
-    final platformKey = (activePlatforms[safeIndex]['key'] ?? 'bet9ja') as String;
-    final platformName = (activePlatforms[safeIndex]['name'] ?? 'Betting') as String;
+    final platformKey = (activePlatforms[safeIndex]['key'] ?? activePlatforms[safeIndex]['code'] ?? activePlatforms[safeIndex]['id'] ?? 'bet9ja').toString();
+    final platformName = (activePlatforms[safeIndex]['name'] ?? 'Betting').toString();
     final customerName = specProvider.validatedCustomerName ?? 'Betting User';
 
     _customerIdController.clear();
@@ -207,115 +207,64 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Betting Platform Selector
+              // Betting Platform Selector (Single Dropdown Method)
               Text(
                 'Select Betting Platform',
                 style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: List.generate(activePlatforms.length, (index) {
-                    final plat = activePlatforms[index];
-                    final isSelected = safeIndex == index;
-                    final platColor = plat['color'] is Color ? plat['color'] as Color : const Color(0xFF0284C7);
-                    final screenWidth = MediaQuery.of(context).size.width - 40;
-                    final itemWidth = activePlatforms.length <= 4
-                        ? (screenWidth - (activePlatforms.length - 1) * 8) / activePlatforms.length
-                        : 110.0;
-
-                    return SizedBox(
-                      width: itemWidth,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ClayContainer(
-                          borderRadius: 16,
-                          depth: isSelected ? 12 : 6,
-                          isRecessed: isSelected,
-                          color: isSelected
-                              ? platColor.withValues(alpha: isDark ? 0.25 : 0.15)
-                              : (isDark ? const Color(0xFF192234) : Colors.white),
-                          borderColor: isSelected ? platColor : null,
-                          borderWidth: isSelected ? 2.0 : 0.0,
-                          onTap: () {
-                            setState(() {
-                              _selectedPlatformIndex = index;
-                            });
-                            specProvider.clearValidation();
-                          },
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ClayContainer(
-                                borderRadius: 12,
-                                depth: 4,
-                                color: platColor.withValues(alpha: 0.2),
-                                padding: const EdgeInsets.all(8),
-                                child: Icon(Icons.sports_soccer_rounded, color: platColor, size: 20),
+              ClayContainer(
+                borderRadius: 16,
+                depth: 8,
+                color: isDark ? const Color(0xFF192234) : Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    value: safeIndex,
+                    isExpanded: true,
+                    menuMaxHeight: 340,
+                    dropdownColor: isDark ? const Color(0xFF192234) : Colors.white,
+                    icon: Icon(Icons.arrow_drop_down_rounded, color: titleCol, size: 28),
+                    items: List.generate(activePlatforms.length, (idx) {
+                      final plat = activePlatforms[idx];
+                      final color = plat['color'] is Color ? plat['color'] as Color : const Color(0xFF0284C7);
+                      return DropdownMenuItem<int>(
+                        value: idx,
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                plat['name'] as String,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: isSelected ? platColor : titleCol,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                  fontSize: 12,
-                                ),
+                              child: Icon(Icons.sports_soccer_rounded, color: color, size: 18),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              plat['name'] as String,
+                              style: TextStyle(
+                                color: titleCol,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ),
-                    );
-                  }),
-                ),
-              ),
-
-              if (activePlatforms.length > 4) ...[
-                const SizedBox(height: 12),
-                ClayContainer(
-                  borderRadius: 16,
-                  depth: 8,
-                  color: isDark ? const Color(0xFF192234) : Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<int>(
-                      value: safeIndex,
-                      isExpanded: true,
-                      menuMaxHeight: 320,
-                      dropdownColor: isDark ? const Color(0xFF192234) : Colors.white,
-                      icon: Icon(Icons.arrow_drop_down_rounded, color: titleCol),
-                      items: List.generate(activePlatforms.length, (idx) {
-                        final plat = activePlatforms[idx];
-                        final color = plat['color'] is Color ? plat['color'] as Color : const Color(0xFF0284C7);
-                        return DropdownMenuItem<int>(
-                          value: idx,
-                          child: Row(
-                            children: [
-                              Icon(Icons.sports_soccer_rounded, color: color, size: 20),
-                              const SizedBox(width: 12),
-                              Text(plat['name'] as String, style: TextStyle(color: titleCol, fontSize: 14)),
-                            ],
-                          ),
-                        );
-                      }),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() {
-                            _selectedPlatformIndex = val;
-                          });
-                          specProvider.clearValidation();
-                        }
-                      },
-                    ),
+                      );
+                    }),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedPlatformIndex = val;
+                        });
+                        specProvider.clearValidation();
+                      }
+                    },
                   ),
                 ),
-              ],
+              ),
               const SizedBox(height: 20),
 
               // Customer User ID 3D Recessed Input & Validate Button

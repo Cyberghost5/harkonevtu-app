@@ -200,11 +200,11 @@ class _TransactionPinModalState extends State<TransactionPinModal> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(4, (index) {
               return Container(
-                width: 52,
-                height: 58,
-                margin: const EdgeInsets.symmetric(horizontal: 6),
+                width: 56,
+                height: 56,
+                margin: const EdgeInsets.symmetric(horizontal: 8),
                 child: ClayContainer(
-                  borderRadius: 14,
+                  borderRadius: 16,
                   depth: 6,
                   isRecessed: true,
                   child: Center(
@@ -227,11 +227,18 @@ class _TransactionPinModalState extends State<TransactionPinModal> {
                         obscureText: true,
                         style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: titleCol),
                         decoration: const InputDecoration(
+                          filled: false,
+                          fillColor: Colors.transparent,
+                          focusColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
                           counterText: '',
                           contentPadding: EdgeInsets.zero,
                           border: InputBorder.none,
-                          focusedBorder: InputBorder.none,
                           enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          focusedErrorBorder: InputBorder.none,
                         ),
                         onChanged: (val) {
                           if (val.isNotEmpty && index < 3) {

@@ -122,6 +122,34 @@ class SecureStorageService {
     return await _storage.read(key: _keyThemeMode);
   }
 
+  // Notification Storage
+  static const String _keyClearedAllNotifications = 'cleared_all_notifications';
+  static const String _keyClearedNotificationIds = 'cleared_notification_ids';
+
+  Future<void> setHasClearedAllNotifications(bool cleared) async {
+    await _storage.write(key: _keyClearedAllNotifications, value: cleared.toString());
+  }
+
+  Future<bool> getHasClearedAllNotifications() async {
+    final val = await _storage.read(key: _keyClearedAllNotifications);
+    return val == 'true';
+  }
+
+  Future<void> saveClearedNotificationIds(List<String> ids) async {
+    await _storage.write(key: _keyClearedNotificationIds, value: jsonEncode(ids));
+  }
+
+  Future<List<String>> getClearedNotificationIds() async {
+    final val = await _storage.read(key: _keyClearedNotificationIds);
+    if (val != null) {
+      try {
+        final List list = jsonDecode(val);
+        return list.map((e) => e.toString()).toList();
+      } catch (_) {}
+    }
+    return [];
+  }
+
   // Clear Session
   Future<void> clearSession() async {
     await deleteToken();
