@@ -49,33 +49,46 @@ class SpecializedProvider extends ChangeNotifier {
             list = response.data as List<dynamic>;
           } else if (response.data is Map<String, dynamic>) {
             final map = response.data as Map<String, dynamic>;
-            final rawList = map['platforms'] ?? map['data'] ?? map['items'] ?? map['services'] ?? map['betting'];
-            if (rawList is List) {
-              list = rawList;
+            dynamic raw = map['platforms'] ?? map['data'] ?? map['items'] ?? map['services'] ?? map['betting'];
+            if (raw is Map<String, dynamic>) {
+              raw = raw['platforms'] ?? raw['data'] ?? raw['items'] ?? raw['services'] ?? raw['betting'];
+            }
+            if (raw is List) {
+              list = raw;
             }
           }
 
           if (list != null && list.isNotEmpty) {
-            _bettingPlatforms = list.map((item) {
+            final Map<String, Map<String, dynamic>> uniqueMap = {};
+            for (var item in list) {
               if (item is Map<String, dynamic>) {
-                final key = item['key'] ?? item['code'] ?? item['platform'] ?? item['id']?.toString() ?? '';
-                final name = item['name'] ?? item['platform_name'] ?? item['title'] ?? key;
-                return {
-                  'key': key.toString(),
-                  'name': name.toString(),
-                  'color': _getPlatformColor(key.toString()),
-                };
+                final key = (item['key'] ?? item['code'] ?? item['platform'] ?? item['id']?.toString() ?? '').toString().trim();
+                final name = (item['name'] ?? item['platform_name'] ?? item['title'] ?? key).toString().trim();
+                if (key.isNotEmpty && !uniqueMap.containsKey(key)) {
+                  uniqueMap[key] = {
+                    'key': key,
+                    'name': name.isNotEmpty ? name : key,
+                    'color': _getPlatformColor(key),
+                  };
+                }
+              } else if (item != null) {
+                final str = item.toString().trim();
+                if (str.isNotEmpty && !uniqueMap.containsKey(str)) {
+                  uniqueMap[str] = {
+                    'key': str,
+                    'name': str,
+                    'color': const Color(0xFF0284C7),
+                  };
+                }
               }
-              return {
-                'key': item.toString(),
-                'name': item.toString(),
-                'color': const Color(0xFF0284C7),
-              };
-            }).toList();
+            }
+            _bettingPlatforms = uniqueMap.values.toList();
             if (_bettingPlatforms.isNotEmpty) success = true;
           }
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Error fetching betting platforms: $e');
+      }
 
       if (!success && attempts < 3) {
         await Future.delayed(const Duration(milliseconds: 1000));

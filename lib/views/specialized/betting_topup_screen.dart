@@ -20,7 +20,7 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
   final _customerIdController = TextEditingController();
   final _amountController = TextEditingController();
 
-  Map<String, dynamic>? _selectedPlatform;
+  int _selectedPlatformIndex = 0;
 
   @override
   void initState() {
@@ -49,8 +49,12 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
       return;
     }
 
-    final platform = (_selectedPlatform?['key'] ?? 'bet9ja') as String;
     final specProvider = Provider.of<SpecializedProvider>(context, listen: false);
+    final activePlatforms = specProvider.bettingPlatforms;
+    if (activePlatforms.isEmpty) return;
+    final safeIndex = (_selectedPlatformIndex >= 0 && _selectedPlatformIndex < activePlatforms.length) ? _selectedPlatformIndex : 0;
+    final platform = (activePlatforms[safeIndex]['key'] ?? 'bet9ja') as String;
+
     final success = await specProvider.validateBettingAccount(
       platform: platform,
       customerId: customerId,
@@ -90,7 +94,11 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
       return;
     }
 
-    final platformName = (_selectedPlatform?['name'] ?? 'Betting') as String;
+    final specProvider = Provider.of<SpecializedProvider>(context, listen: false);
+    final activePlatforms = specProvider.bettingPlatforms;
+    if (activePlatforms.isEmpty) return;
+    final safeIndex = (_selectedPlatformIndex >= 0 && _selectedPlatformIndex < activePlatforms.length) ? _selectedPlatformIndex : 0;
+    final platformName = (activePlatforms[safeIndex]['name'] ?? 'Betting') as String;
     final currencySymbol = Provider.of<AppConfigProvider>(context, listen: false).currencySymbol;
 
     showModalBottomSheet(
@@ -106,9 +114,12 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
   }
 
   void _executeFunding(String customerId, double amount, String pin) {
-    final platformKey = (_selectedPlatform?['key'] ?? 'bet9ja') as String;
-    final platformName = (_selectedPlatform?['name'] ?? 'Betting') as String;
     final specProvider = Provider.of<SpecializedProvider>(context, listen: false);
+    final activePlatforms = specProvider.bettingPlatforms;
+    if (activePlatforms.isEmpty) return;
+    final safeIndex = (_selectedPlatformIndex >= 0 && _selectedPlatformIndex < activePlatforms.length) ? _selectedPlatformIndex : 0;
+    final platformKey = (activePlatforms[safeIndex]['key'] ?? 'bet9ja') as String;
+    final platformName = (activePlatforms[safeIndex]['name'] ?? 'Betting') as String;
     final customerName = specProvider.validatedCustomerName ?? 'Betting User';
 
     _customerIdController.clear();
@@ -184,15 +195,7 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
     }
 
     final activePlatforms = specProvider.bettingPlatforms;
-    Map<String, dynamic>? selectedPlatform = _selectedPlatform;
-    final currentKey = selectedPlatform?['key'];
-    if (currentKey == null || !activePlatforms.any((p) => p['key'] == currentKey)) {
-      if (activePlatforms.isNotEmpty) {
-        selectedPlatform = activePlatforms.first;
-      }
-    } else {
-      selectedPlatform = activePlatforms.firstWhere((p) => p['key'] == currentKey, orElse: () => activePlatforms.first);
-    }
+    final safeIndex = (_selectedPlatformIndex >= 0 && _selectedPlatformIndex < activePlatforms.length) ? _selectedPlatformIndex : 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -204,49 +207,115 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Betting Platform Dropdown in 3D ClayContainer
+              // Betting Platform Selector
               Text(
                 'Select Betting Platform',
                 style: TextStyle(color: titleCol, fontSize: 14, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-              ClayContainer(
-                borderRadius: 16,
-                depth: 8,
-                color: isDark ? const Color(0xFF192234) : Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<Map<String, dynamic>>(
-                    value: selectedPlatform,
-                    isExpanded: true,
-                    menuMaxHeight: 320,
-                    dropdownColor: isDark ? const Color(0xFF192234) : Colors.white,
-                    icon: Icon(Icons.arrow_drop_down_rounded, color: titleCol),
-                    items: activePlatforms.map((plat) {
-                      final color = plat['color'] is Color ? plat['color'] as Color : const Color(0xFF0284C7);
-                      return DropdownMenuItem<Map<String, dynamic>>(
-                        value: plat,
-                        child: Row(
-                          children: [
-                            Icon(Icons.sports_soccer_rounded, color: color, size: 20),
-                            const SizedBox(width: 12),
-                            Text(plat['name'] as String, style: TextStyle(color: titleCol, fontSize: 14)),
-                          ],
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: List.generate(activePlatforms.length, (index) {
+                    final plat = activePlatforms[index];
+                    final isSelected = safeIndex == index;
+                    final platColor = plat['color'] is Color ? plat['color'] as Color : const Color(0xFF0284C7);
+                    final screenWidth = MediaQuery.of(context).size.width - 40;
+                    final itemWidth = activePlatforms.length <= 4
+                        ? (screenWidth - (activePlatforms.length - 1) * 8) / activePlatforms.length
+                        : 110.0;
+
+                    return SizedBox(
+                      width: itemWidth,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ClayContainer(
+                          borderRadius: 16,
+                          depth: isSelected ? 12 : 6,
+                          isRecessed: isSelected,
+                          color: isSelected
+                              ? platColor.withValues(alpha: isDark ? 0.25 : 0.15)
+                              : (isDark ? const Color(0xFF192234) : Colors.white),
+                          borderColor: isSelected ? platColor : null,
+                          borderWidth: isSelected ? 2.0 : 0.0,
+                          onTap: () {
+                            setState(() {
+                              _selectedPlatformIndex = index;
+                            });
+                            specProvider.clearValidation();
+                          },
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ClayContainer(
+                                borderRadius: 12,
+                                depth: 4,
+                                color: platColor.withValues(alpha: 0.2),
+                                padding: const EdgeInsets.all(8),
+                                child: Icon(Icons.sports_soccer_rounded, color: platColor, size: 20),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                plat['name'] as String,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: isSelected ? platColor : titleCol,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedPlatform = val;
-                        });
-                        specProvider.clearValidation();
-                      }
-                    },
-                  ),
+                      ),
+                    );
+                  }),
                 ),
               ),
+
+              if (activePlatforms.length > 4) ...[
+                const SizedBox(height: 12),
+                ClayContainer(
+                  borderRadius: 16,
+                  depth: 8,
+                  color: isDark ? const Color(0xFF192234) : Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      value: safeIndex,
+                      isExpanded: true,
+                      menuMaxHeight: 320,
+                      dropdownColor: isDark ? const Color(0xFF192234) : Colors.white,
+                      icon: Icon(Icons.arrow_drop_down_rounded, color: titleCol),
+                      items: List.generate(activePlatforms.length, (idx) {
+                        final plat = activePlatforms[idx];
+                        final color = plat['color'] is Color ? plat['color'] as Color : const Color(0xFF0284C7);
+                        return DropdownMenuItem<int>(
+                          value: idx,
+                          child: Row(
+                            children: [
+                              Icon(Icons.sports_soccer_rounded, color: color, size: 20),
+                              const SizedBox(width: 12),
+                              Text(plat['name'] as String, style: TextStyle(color: titleCol, fontSize: 14)),
+                            ],
+                          ),
+                        );
+                      }),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedPlatformIndex = val;
+                          });
+                          specProvider.clearValidation();
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
 
               // Customer User ID 3D Recessed Input & Validate Button
