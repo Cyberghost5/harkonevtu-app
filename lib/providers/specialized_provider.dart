@@ -149,6 +149,7 @@ class SpecializedProvider extends ChangeNotifier {
     required String pin,
   }) async {
     _isLoading = true;
+    _validatedCustomerName = null;
     notifyListeners();
 
     try {

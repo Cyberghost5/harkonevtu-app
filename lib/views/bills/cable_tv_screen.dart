@@ -142,6 +142,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
 
     _smartcardController.clear();
     _phoneController.clear();
+    Provider.of<BillsProvider>(context, listen: false).clearValidation();
     setState(() {
       _selectedPlan = null;
     });
@@ -178,7 +179,16 @@ class _CableTvScreenState extends State<CableTvScreen> {
     final titleCol = Theme.of(context).colorScheme.onSurface;
     final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
-    if (billsProvider.cableProviders.isEmpty && !billsProvider.isLoading) {
+    if (billsProvider.isLoading && billsProvider.cableProviders.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Cable TV Subscription')),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (billsProvider.cableProviders.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Cable TV Subscription')),
         body: Center(

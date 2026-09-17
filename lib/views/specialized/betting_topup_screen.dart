@@ -144,7 +144,16 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
     final titleCol = Theme.of(context).colorScheme.onSurface;
     final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
-    if (specProvider.bettingPlatforms.isEmpty && !specProvider.isLoading) {
+    if (specProvider.isLoading && specProvider.bettingPlatforms.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Betting Wallet Top-Up')),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (specProvider.bettingPlatforms.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Betting Wallet Top-Up')),
         body: Center(

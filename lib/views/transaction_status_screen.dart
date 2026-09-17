@@ -58,11 +58,7 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
   Timer? _statusTickerTimer;
   int _currentTickerIndex = 0;
   final List<String> _processingSteps = [
-    'Validating transaction details...',
-    'Encrypting secure payload...',
-    'Connecting to provider gateway...',
-    'Awaiting network confirmation...',
-    'Finalizing transaction status...',
+    'Processing, please wait a little bit...',
   ];
 
   @override

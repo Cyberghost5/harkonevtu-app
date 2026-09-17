@@ -125,6 +125,7 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
     _meterController.clear();
     _amountController.clear();
     _phoneController.clear();
+    Provider.of<BillsProvider>(context, listen: false).clearValidation();
 
     Navigator.push(
       context,
@@ -157,7 +158,16 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
     final titleCol = Theme.of(context).colorScheme.onSurface;
     final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
-    if (billsProvider.discos.isEmpty && !billsProvider.isLoading) {
+    if (billsProvider.isLoading && billsProvider.discos.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Pay Electricity Bill')),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (billsProvider.discos.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Pay Electricity Bill')),
         body: Center(

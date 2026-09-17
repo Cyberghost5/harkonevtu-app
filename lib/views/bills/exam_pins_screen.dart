@@ -28,8 +28,11 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
     return billsProvider.examTypes.asMap().entries.map((entry) {
       final idx = entry.key;
       final map = entry.value;
+      final rawPrice = map['price'] ?? map['unit_price'] ?? 0;
+      final price = (rawPrice is num) ? rawPrice.toDouble() : (double.tryParse(rawPrice.toString()) ?? 0.0);
       return {
         ...map,
+        'price': price,
         'color': colors[idx % colors.length],
       };
     }).toList();
@@ -62,12 +65,12 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
       return;
     }
 
-
     final billsProvider = Provider.of<BillsProvider>(context, listen: false);
     final examTypes = _getExamTypes(billsProvider);
-    final safeIndex = _selectedExamIndex >= examTypes.length ? 0 : _selectedExamIndex;
+    if (examTypes.isEmpty) return;
+    final safeIndex = (_selectedExamIndex >= 0 && _selectedExamIndex < examTypes.length) ? _selectedExamIndex : 0;
     final exam = examTypes[safeIndex];
-    final totalPrice = (exam['price'] as double) * _quantity;
+    final totalPrice = ((exam['price'] as num? ?? 0.0).toDouble()) * _quantity;
     final currencySymbol = Provider.of<AppConfigProvider>(context, listen: false).currencySymbol;
 
     showModalBottomSheet(
@@ -85,9 +88,10 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
   void _executePurchase(dynamic examTypeId, String phone, String pin) {
     final billsProvider = Provider.of<BillsProvider>(context, listen: false);
     final examTypes = _getExamTypes(billsProvider);
-    final safeIndex = _selectedExamIndex >= examTypes.length ? 0 : _selectedExamIndex;
+    if (examTypes.isEmpty) return;
+    final safeIndex = (_selectedExamIndex >= 0 && _selectedExamIndex < examTypes.length) ? _selectedExamIndex : 0;
     final exam = examTypes[safeIndex];
-    final totalPrice = ((exam['price'] as num? ?? 0.0) * _quantity).toDouble();
+    final totalPrice = ((exam['price'] as num? ?? 0.0).toDouble()) * _quantity;
     final examName = (exam['name'] ?? 'Exam PIN') as String;
 
     _phoneController.clear();
@@ -127,7 +131,16 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
     final titleCol = Theme.of(context).colorScheme.onSurface;
     final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
-    if (billsProvider.examTypes.isEmpty && !billsProvider.isLoading) {
+    if (billsProvider.isLoading && billsProvider.examTypes.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Exam Result PINs')),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (billsProvider.examTypes.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Exam Result PINs')),
         body: Center(
@@ -158,9 +171,9 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
     }
 
     final examTypes = _getExamTypes(billsProvider);
-    final safeIndex = _selectedExamIndex >= examTypes.length ? 0 : _selectedExamIndex;
+    final safeIndex = (_selectedExamIndex >= 0 && _selectedExamIndex < examTypes.length) ? _selectedExamIndex : 0;
     final selectedExam = examTypes[safeIndex];
-    final totalPrice = (selectedExam['price'] as double) * _quantity;
+    final totalPrice = ((selectedExam['price'] as num? ?? 0.0).toDouble()) * _quantity;
 
     return Scaffold(
       appBar: AppBar(

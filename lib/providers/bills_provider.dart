@@ -123,6 +123,8 @@ class BillsProvider extends ChangeNotifier {
     required String pin,
   }) async {
     _isLoading = true;
+    _validatedCustomerName = null;
+    _validatedAddress = null;
     notifyListeners();
 
     try {
@@ -331,6 +333,8 @@ class BillsProvider extends ChangeNotifier {
     required String pin,
   }) async {
     _isLoading = true;
+    _validatedCustomerName = null;
+    _validatedAddress = null;
     notifyListeners();
 
     try {
@@ -366,28 +370,51 @@ class BillsProvider extends ChangeNotifier {
     while (attempts < 3 && !success) {
       attempts++;
       try {
-        final response = await _apiClient.get(
+        var response = await _apiClient.get(
           '/bills/exam-pins/types',
           queryParameters: {'per_page': 100, 'limit': 100},
         );
+        if (!response.status || response.data == null) {
+          response = await _apiClient.get(
+            '/bills/exam-pins',
+            queryParameters: {'per_page': 100, 'limit': 100},
+          );
+        }
+
         if (response.status && response.data != null) {
-          dynamic typesData;
-          if (response.data is Map && response.data['types'] != null) {
-            typesData = response.data['types'];
-          } else if (response.data is Map && response.data['data'] != null && response.data['data']['types'] != null) {
-            typesData = response.data['data']['types'];
-          } else if (response.data is List) {
-            typesData = response.data;
+          List<dynamic>? list;
+          if (response.data is List) {
+            list = response.data as List<dynamic>;
+          } else if (response.data is Map<String, dynamic>) {
+            final map = response.data as Map<String, dynamic>;
+            dynamic raw = map['types'] ?? map['exam_types'] ?? map['data'] ?? map['items'] ?? map['services'] ?? map['exams'];
+            if (raw is Map<String, dynamic>) {
+              raw = raw['types'] ?? raw['exam_types'] ?? raw['data'] ?? raw['items'] ?? raw['services'];
+            }
+            if (raw is List) {
+              list = raw;
+            }
           }
 
-          if (typesData is List) {
-            _examTypes = typesData.map((e) {
-              final map = Map<String, dynamic>.from(e as Map);
+          if (list != null && list.isNotEmpty) {
+            _examTypes = list.map((e) {
+              if (e is Map<String, dynamic>) {
+                final id = e['id'] ?? e['exam_type_id'] ?? e['code'] ?? e['key'];
+                final name = e['name'] ?? e['exam_name'] ?? e['title'] ?? e['type'] ?? id?.toString() ?? 'Exam PIN';
+                final rawPrice = e['unit_price'] ?? e['price'] ?? e['amount'] ?? e['cost'] ?? 0;
+                final price = (rawPrice is num) ? rawPrice.toDouble() : (double.tryParse(rawPrice.toString()) ?? 0.0);
+                return {
+                  'id': id,
+                  'name': name.toString(),
+                  'price': price,
+                  'code': e['code']?.toString() ?? id?.toString(),
+                };
+              }
               return {
-                'id': map['id'],
-                'name': map['name'] ?? map['title'] ?? 'Exam PIN',
-                'price': (map['unit_price'] ?? map['price'] ?? 0).toDouble(),
-                'code': map['code'],
+                'id': e,
+                'name': e.toString(),
+                'price': 0.0,
+                'code': e.toString(),
               };
             }).toList();
             if (_examTypes.isNotEmpty) success = true;
@@ -423,13 +450,18 @@ class BillsProvider extends ChangeNotifier {
       final parsedId = int.tryParse(examTypeId.toString()) ?? examTypeId;
       final payload = {
         'exam_type_id': parsedId,
+        'provider_id': parsedId,
+        'type_id': parsedId,
         'quantity': quantity,
         'phone': phone,
         'pin': pin,
         'transaction_pin': pin,
       };
 
-      final response = await _apiClient.post('/bills/exam-pins/purchase', data: payload);
+      var response = await _apiClient.post('/bills/exam-pins/purchase', data: payload);
+      if (!response.status) {
+        response = await _apiClient.post('/bills/exam-pins/buy', data: payload);
+      }
 
       _isLoading = false;
       notifyListeners();
