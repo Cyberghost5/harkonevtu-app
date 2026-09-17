@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'package:local_auth/local_auth.dart';
 import '../core/api/api_client.dart';
 import '../core/services/notification_service.dart';
@@ -528,16 +529,85 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // If it's a URL or base64
-      var response = await _apiClient.post('/user/avatar', data: {'avatar': avatarPathOrUrl});
-      if (!response.status) {
-        response = await _apiClient.post('/user/profile/avatar', data: {'avatar': avatarPathOrUrl});
+      ApiResponse response;
+      final isLocalFile = !avatarPathOrUrl.startsWith('http://') && !avatarPathOrUrl.startsWith('https://');
+
+      if (isLocalFile) {
+        final fileName = avatarPathOrUrl.split('/').last.split('\\').last;
+        final formData = FormData.fromMap({
+          'avatar': await MultipartFile.fromFile(
+            avatarPathOrUrl,
+            filename: fileName,
+          ),
+          if (_user?.name != null && _user!.name.isNotEmpty) 'name': _user!.name,
+        });
+
+        // POST /user/profile as specified in API documentation (curl -F "avatar=@file" -F "name=John")
+        response = await _apiClient.post('/user/profile', data: formData);
+        if (!response.status) {
+          response = await _apiClient.post('/user/profile/update', data: formData);
+        }
+        if (!response.status) {
+          response = await _apiClient.post('/user/avatar', data: formData);
+        }
+      } else {
+        response = await _apiClient.post('/user/profile', data: {
+          'avatar': avatarPathOrUrl,
+          if (_user?.name != null && _user!.name.isNotEmpty) 'name': _user!.name,
+        });
+        if (!response.status) {
+          response = await _apiClient.post('/user/avatar', data: {'avatar': avatarPathOrUrl});
+        }
       }
 
       if (response.status) {
+        String? newAvatarUrl;
+        if (response.data != null) {
+          if (response.data is String) {
+            newAvatarUrl = response.data as String;
+          } else if (response.data is Map<String, dynamic>) {
+            final map = response.data as Map<String, dynamic>;
+            final userMap = map['user'] is Map<String, dynamic>
+                ? map['user'] as Map<String, dynamic>
+                : (map['data'] is Map<String, dynamic> ? map['data'] as Map<String, dynamic> : map);
+
+            newAvatarUrl = userMap['avatar']?.toString() ??
+                userMap['avatar_url']?.toString() ??
+                userMap['profile_photo_url']?.toString() ??
+                userMap['profile_picture']?.toString();
+
+            try {
+              _user = UserModel.fromJson(userMap);
+              await _storage.saveUserData(_user!.toJson());
+            } catch (_) {}
+          }
+        }
+
         await fetchProfile();
+
+        if (newAvatarUrl != null && newAvatarUrl.isNotEmpty && _user != null) {
+          if (_user!.avatar == null || !_user!.avatar!.startsWith('http')) {
+            _user = UserModel(
+              id: _user!.id,
+              name: _user!.name,
+              username: _user!.username,
+              email: _user!.email,
+              phone: _user!.phone,
+              userType: _user!.userType,
+              isActive: _user!.isActive,
+              referralCode: _user!.referralCode,
+              kycStatus: _user!.kycStatus,
+              avatar: newAvatarUrl,
+              bankName: _user!.bankName,
+              bankAccountNumber: _user!.bankAccountNumber,
+              bankAccountName: _user!.bankAccountName,
+              wallet: _user!.wallet,
+            );
+            await _storage.saveUserData(_user!.toJson());
+          }
+        }
       } else if (_user != null) {
-        // Fallback local update so UI reflects immediately
+        // Fallback local update if backend error occurs
         _user = UserModel(
           id: _user!.id,
           name: _user!.name,
