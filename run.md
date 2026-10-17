@@ -138,6 +138,10 @@ git push origin brand/nmilleniumresource
 git checkout brand/tincitybill
 git merge main
 git push origin brand/tincitybill
+
+git checkout brand/idypay
+git merge main
+git push origin brand/idypay
 ```
 
 ### 2. On VPS (Pull & Rebuild):
@@ -166,6 +170,14 @@ git fetch origin
 git reset --hard origin/brand/tincitybill
 flutter pub get
 dart run tool/build_brand.dart tincitybill --build
+
+flutter clean
+git checkout brand/idypay
+git pull origin brand/idypay
+git fetch origin
+git reset --hard origin/brand/idypay
+flutter pub get
+dart run tool/build_brand.dart idypay --build
 ```
 
 ---
