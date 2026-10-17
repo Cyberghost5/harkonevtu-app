@@ -170,6 +170,14 @@ git fetch origin
 git reset --hard origin/brand/tincitybill
 flutter pub get
 dart run tool/build_brand.dart tincitybill --build
+
+flutter clean
+git checkout brand/idypay
+git pull origin brand/idypay
+git fetch origin
+git reset --hard origin/brand/idypay
+flutter pub get
+dart run tool/build_brand.dart idypay --build
 ```
 
 ---
