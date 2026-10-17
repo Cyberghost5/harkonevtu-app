@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "62911045279",
+    "project_id": "idypay",
+    "storage_bucket": "idypay.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:62911045279:android:42154b133b82e4c1590caa",
+        "android_client_info": {
+          "package_name": "com.harkonedesigns.idypay"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8A2UpHPR9JA3xahlhD0vlBE5SOTQoT_k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

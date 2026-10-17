@@ -1,0 +1,10 @@
+{
+  "brand_id": "idypay",
+  "app_name": "IdyPay",
+  "package_name": "com.harkonedesigns.idypay",
+  "base_url": "https://idypay.com.ng/api/v1",
+  "git_branch": "brand/idypay",
+  "key_alias": "idypay",
+  "store_password": "idypay",
+  "key_password": "idypay"
+}
