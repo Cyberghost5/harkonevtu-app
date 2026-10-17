@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import 'login_screen.dart';
 import 'otp_verification_screen.dart';
+import '../navigation/main_navigation_shell.dart';
 
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
 import '../widgets/clay_text_field.dart';
+import '../widgets/google_sign_in_button.dart';
 
 class RegisterScreen extends StatefulWidget {
   final Function(Widget) onNavigate;
@@ -92,6 +94,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errorMsg),
+          backgroundColor: const Color(0xFFEF4444),
+        ),
+      );
+    }
+  }
+
+  void _handleGoogleSignIn() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+
+    final result = await authProvider.signInWithGoogle();
+    if (!mounted) return;
+
+    if (result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created with Google! Welcome.'),
+          backgroundColor: Color(0xFF10B981),
+        ),
+      );
+      await dashboardProvider.fetchDashboardData();
+      if (!mounted) return;
+      widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
+      if (widget.onLoginSuccess != null) {
+        widget.onLoginSuccess!();
+      }
+    } else if (result.message != 'Google Sign-In cancelled.') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message),
           backgroundColor: const Color(0xFFEF4444),
         ),
       );
@@ -221,6 +253,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   icon: Icons.person_add_rounded,
                   isLoading: authProvider.isLoading,
                   onPressed: authProvider.isLoading ? null : _handleRegister,
+                ),
+
+                const SizedBox(height: 24),
+
+                // Divider with "or register with"
+                Row(
+                  children: [
+                    Expanded(
+                      child: Divider(
+                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                        thickness: 1,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'or register with',
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Divider(
+                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                        thickness: 1,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Google Sign-In Button
+                GoogleSignInButton(
+                  text: 'Sign up with Google',
+                  isLoading: authProvider.isLoading,
+                  onPressed: authProvider.isLoading ? null : _handleGoogleSignIn,
                 ),
 
                 const SizedBox(height: 24),

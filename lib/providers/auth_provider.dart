@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:local_auth/local_auth.dart';
 import '../core/api/api_client.dart';
 import '../core/services/notification_service.dart';
+import '../core/services/google_auth_service.dart';
 import '../core/storage/secure_storage_service.dart';
 import '../models/user_model.dart';
 
@@ -222,6 +223,84 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> login(String loginInput, String password) async {
     final result = await loginDetailed(loginInput, password);
     return result.success;
+  }
+
+  /// Authenticate or register using Google Sign-In.
+  Future<LoginResult> signInWithGoogle({String? serverClientId}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final googleResult = await GoogleAuthService().signIn(serverClientId: serverClientId);
+
+      if (googleResult == null) {
+        _isLoading = false;
+        notifyListeners();
+        return LoginResult(
+          success: false,
+          message: 'Google Sign-In cancelled.',
+        );
+      }
+
+      final payload = <String, dynamic>{
+        'id_token': googleResult.idToken,
+        'device_name': 'mobile_app',
+        if (googleResult.accessToken != null && googleResult.accessToken!.isNotEmpty)
+          'access_token': googleResult.accessToken,
+        if (googleResult.email != null && googleResult.email!.isNotEmpty)
+          'email': googleResult.email,
+        if (googleResult.id != null && googleResult.id!.isNotEmpty)
+          'google_id': googleResult.id,
+        if (googleResult.displayName != null && googleResult.displayName!.isNotEmpty)
+          'name': googleResult.displayName,
+      };
+
+      final response = await _apiClient.post('/auth/google', data: payload);
+
+      if (response.status) {
+        if (response.data != null && response.data is Map<String, dynamic>) {
+          final resData = response.data as Map<String, dynamic>;
+          final token = resData['token'] ?? resData['access_token'] ?? resData['user']?['token'];
+          if (token != null && token.toString().isNotEmpty) {
+            _token = token.toString();
+            await _storage.saveToken(_token!);
+          }
+
+          if (resData['user'] != null && resData['user'] is Map<String, dynamic>) {
+            _user = UserModel.fromJson(resData['user'] as Map<String, dynamic>);
+            await _storage.saveUserData(_user!.toJson());
+          }
+
+          if (_token != null && _token!.isNotEmpty) {
+            NotificationService().syncDeviceToken(_apiClient);
+            await fetchProfile();
+          }
+        }
+
+        _isLoading = false;
+        notifyListeners();
+        return LoginResult(
+          success: true,
+          message: response.message.isNotEmpty
+              ? response.message
+              : 'Google authentication successful.',
+        );
+      } else {
+        _errorMessage = response.message.isNotEmpty
+            ? response.message
+            : 'Google authentication failed.';
+        _isLoading = false;
+        notifyListeners();
+        return LoginResult(success: false, message: _errorMessage!);
+      }
+    } catch (e) {
+      debugPrint('[Google Sign-In Error] $e');
+      _errorMessage = 'An error occurred during Google Sign-In.';
+      _isLoading = false;
+      notifyListeners();
+      return LoginResult(success: false, message: _errorMessage!);
+    }
   }
 
 
@@ -781,6 +860,9 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logout() async {
     try {
       await _apiClient.post('/auth/logout');
+    } catch (_) {}
+    try {
+      await GoogleAuthService().signOut();
     } catch (_) {}
     _token = null;
     _user = null;

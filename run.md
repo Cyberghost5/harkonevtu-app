@@ -127,6 +127,14 @@ git commit -m "Added new features to core app"
 git push origin main
 
 # 2. Merge main updates into the brand branch
+git checkout brand/dakeventures
+git merge main
+git push origin brand/dakeventures
+
+git checkout brand/nmilleniumresource
+git merge main
+git push origin brand/nmilleniumresource
+
 git checkout brand/tincitybill
 git merge main
 git push origin brand/tincitybill
@@ -142,6 +150,7 @@ git fetch origin
 git reset --hard origin/brand/dakeventures
 flutter pub get
 dart run tool/build_brand.dart dakeventures --build
+
 flutter clean
 git checkout brand/nmilleniumresource
 git pull origin brand/nmilleniumresource
@@ -149,6 +158,7 @@ git fetch origin
 git reset --hard origin/brand/nmilleniumresource
 flutter pub get
 dart run tool/build_brand.dart nmilleniumresource --build
+
 flutter clean
 git checkout brand/tincitybill
 git pull origin brand/tincitybill
