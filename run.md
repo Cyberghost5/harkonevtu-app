@@ -138,6 +138,10 @@ git push origin brand/nmilleniumresource
 git checkout brand/tincitybill
 git merge main
 git push origin brand/tincitybill
+
+git checkout brand/idypay
+git merge main
+git push origin brand/idypay
 ```
 
 ### 2. On VPS (Pull & Rebuild):
