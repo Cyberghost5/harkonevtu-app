@@ -62,14 +62,20 @@ void main(List<String> args) async {
     }
   }
 
-  // 3. Update ApiConstants.baseUrl
+  // 3. Update ApiConstants.baseUrl & googleServerClientId
+  final googleServerClientId = (configJson['google_server_client_id'] as String?) ?? '';
   final apiConstantsFile = File('lib/core/api/api_constants.dart');
   if (apiConstantsFile.existsSync()) {
-    print('\n🌐 Updating API Base URL in lib/core/api/api_constants.dart');
+    print('\n🌐 Updating API Base URL and Google Client ID in lib/core/api/api_constants.dart');
     final newContent = '''class ApiConstants {
   static const String baseUrl = String.fromEnvironment(
     'BASE_URL',
     defaultValue: '$baseUrl',
+  );
+
+  static const String googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue: '$googleServerClientId',
   );
 }
 ''';

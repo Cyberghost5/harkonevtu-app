@@ -128,12 +128,21 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       await dashboardProvider.fetchDashboardData();
       if (!mounted) return;
 
+      final Function(Widget) navigateCallback = widget.onNavigate ??
+          (screen) {
+            if (mounted) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => screen),
+              );
+            }
+          };
+
       if (widget.onNavigate != null) {
-        widget.onNavigate!(MainNavigationShell(onNavigate: widget.onNavigate));
+        widget.onNavigate!(MainNavigationShell(onNavigate: navigateCallback));
       } else {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => MainNavigationShell(onNavigate: widget.onNavigate),
+            builder: (_) => MainNavigationShell(onNavigate: navigateCallback),
           ),
         );
       }
