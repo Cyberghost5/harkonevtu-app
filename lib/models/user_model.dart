@@ -59,6 +59,11 @@ class UserModel {
   final String? bankAccountNumber;
   final String? bankAccountName;
   final WalletModel? wallet;
+  final bool hasPin;
+
+  bool get needsPhone => phone.trim().isEmpty;
+  bool get needsPin => !hasPin;
+  bool get isProfileComplete => !needsPhone && !needsPin;
 
   UserModel({
     required this.id,
@@ -75,6 +80,7 @@ class UserModel {
     this.bankAccountNumber,
     this.bankAccountName,
     this.wallet,
+    this.hasPin = false,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> rawJson) {
@@ -123,6 +129,10 @@ class UserModel {
       wallet: json['wallet'] != null && json['wallet'] is Map<String, dynamic>
           ? WalletModel.fromJson(json['wallet'] as Map<String, dynamic>)
           : null,
+      hasPin: json['has_pin'] == true ||
+          json['is_pin_set'] == true ||
+          (json['requires_pin_setup'] == false) ||
+          (json['transaction_pin'] != null && json['transaction_pin'].toString().isNotEmpty),
     );
   }
 
@@ -142,6 +152,7 @@ class UserModel {
       'bank_account_number': bankAccountNumber,
       'bank_account_name': bankAccountName,
       'wallet': wallet?.toJson(),
+      'has_pin': hasPin,
     };
   }
 }

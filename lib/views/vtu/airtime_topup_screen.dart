@@ -34,8 +34,12 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<VtuProvider>(context, listen: false).clearNetworkLookup();
+      }
+    });
   }
-
 
   @override
   void dispose() {
@@ -45,14 +49,23 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
   }
 
   void _onPhoneChanged(String phone) async {
-    if (phone.length >= 11) {
-      final vtuProvider = Provider.of<VtuProvider>(context, listen: false);
-      final detected = await vtuProvider.lookupNetwork(phone);
+    final vtuProvider = Provider.of<VtuProvider>(context, listen: false);
+    final clean = phone.trim();
+
+    if (clean.length == 11) {
+      final detected = await vtuProvider.lookupNetwork(clean);
       if (detected != null && mounted) {
         setState(() {
           _selectedNetwork = detected;
         });
       }
+    } else {
+      if (vtuProvider.detectedNetwork != null) {
+        vtuProvider.clearNetworkLookup();
+      }
+    }
+    if (mounted) {
+      setState(() {});
     }
   }
 
@@ -99,6 +112,7 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
   void _executeAirtimePurchase(String phone, double amount, String pin) {
     _phoneController.clear();
     _amountController.clear();
+    Provider.of<VtuProvider>(context, listen: false).clearNetworkLookup();
 
     Navigator.push(
       context,
@@ -210,7 +224,7 @@ class _AirtimeTopupScreenState extends State<AirtimeTopupScreen> {
                 prefixIcon: Icon(Icons.phone_android_rounded, color: subCol),
                 onChanged: _onPhoneChanged,
 
-                suffixIcon: vtuProvider.detectedNetwork != null
+                suffixIcon: (_phoneController.text.trim().length == 11 && vtuProvider.detectedNetwork != null)
                     ? Padding(
                         padding: const EdgeInsets.all(10),
                         child: Container(

@@ -638,17 +638,43 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
       merged.addAll(data);
     }
 
-    final token = merged['token'] ??
+    final rawToken = merged['token'] ??
+        merged['purchased_code'] ??
         merged['purchased_token'] ??
+        merged['Token'] ??
+        merged['mainToken'] ??
         merged['main_token'] ??
         merged['creditToken'] ??
         merged['meter_token'] ??
+        merged['meterToken'] ??
         merged['token_code'] ??
         merged['pin'] ??
         merged['serial'] ??
         merged['cards'];
 
-    final units = merged['units'] ?? merged['token_units'] ?? merged['unit'];
+    String? token;
+    if (rawToken != null) {
+      final str = rawToken.toString().trim().replaceFirst(RegExp(r'^token\s*[:\-]\s*', caseSensitive: false), '').trim();
+      if (str.isNotEmpty && str.toUpperCase() != 'N/A') {
+        token = str;
+      }
+    }
+
+    final rawUnits = merged['units'] ??
+        merged['meter_units'] ??
+        merged['RefundUnits'] ??
+        merged['FreeUnits'] ??
+        merged['token_units'] ??
+        merged['unit'] ??
+        merged['mainTokenUnit'];
+
+    String? units;
+    if (rawUnits != null) {
+      final str = rawUnits.toString().trim();
+      if (str.isNotEmpty && str.toUpperCase() != 'N/A') {
+        units = str;
+      }
+    }
 
     if (token == null && units == null) return const SizedBox.shrink();
 

@@ -8,6 +8,7 @@ import '../navigation/main_navigation_shell.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import 'otp_verification_screen.dart';
+import 'complete_profile_screen.dart';
 
 import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
@@ -78,12 +79,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           backgroundColor: Color(0xFF10B981),
         ),
       );
-      await dashboardProvider.fetchDashboardData();
-      if (!mounted) return;
-      widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
-      if (widget.onLoginSuccess != null) {
-        widget.onLoginSuccess!();
-      }
+      _navigatePostAuth();
     } else if (result.requiresVerification) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -118,22 +114,37 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
   }
 
+  void _navigatePostAuth() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+
+    await dashboardProvider.fetchDashboardData();
+    if (!mounted) return;
+
+    if (!authProvider.isProfileComplete) {
+      widget.onNavigate(
+        CompleteProfileScreen(
+          onNavigate: widget.onNavigate,
+          onCompleteSuccess: widget.onLoginSuccess,
+        ),
+      );
+    } else {
+      widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
+      if (widget.onLoginSuccess != null) {
+        widget.onLoginSuccess!();
+      }
+    }
+  }
 
   void _handleBiometricsLogin() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
 
     final authenticated = await authProvider.authenticateWithBiometrics();
     if (!mounted) return;
 
     if (authenticated) {
       if (authProvider.isAuthenticated) {
-        await dashboardProvider.fetchDashboardData();
-        if (!mounted) return;
-        widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
-        if (widget.onLoginSuccess != null) {
-          widget.onLoginSuccess!();
-        }
+        _navigatePostAuth();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -147,7 +158,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   void _handleGoogleSignIn() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
 
     final result = await authProvider.signInWithGoogle();
     if (!mounted) return;
@@ -159,12 +169,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           backgroundColor: Color(0xFF10B981),
         ),
       );
-      await dashboardProvider.fetchDashboardData();
-      if (!mounted) return;
-      widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
-      if (widget.onLoginSuccess != null) {
-        widget.onLoginSuccess!();
-      }
+      _navigatePostAuth();
     } else if (result.message != 'Google Sign-In cancelled.') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

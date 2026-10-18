@@ -9,21 +9,67 @@ class BillsProvider extends ChangeNotifier {
   List<CablePlanModel> _cablePlans = [];
   bool _isLoading = false;
   bool _isValidating = false;
-  String? _validatedCustomerName;
-  String? _validatedAddress;
   String? _errorMessage;
+
+  // Electricity validation state
+  String? _validatedMeterCustomerName;
+  String? _validatedMeterAddress;
+  String? _validatedMeterNumber;
+  dynamic _validatedDiscoId;
+  String? _validatedMeterType;
+
+  // Cable validation state
+  String? _validatedCableCustomerName;
+  String? _validatedSmartcardNumber;
+  dynamic _validatedCableProviderId;
 
   List<DiscoModel> get discos => _discos;
   List<CablePlanModel> get cablePlans => _cablePlans;
   bool get isLoading => _isLoading;
   bool get isValidating => _isValidating;
-  String? get validatedCustomerName => _validatedCustomerName;
-  String? get validatedAddress => _validatedAddress;
   String? get errorMessage => _errorMessage;
 
+  // Electricity getters
+  String? get validatedMeterCustomerName => _validatedMeterCustomerName;
+  String? get validatedMeterAddress => _validatedMeterAddress;
+  String? get validatedMeterNumber => _validatedMeterNumber;
+  dynamic get validatedDiscoId => _validatedDiscoId;
+  String? get validatedMeterType => _validatedMeterType;
+
+  // Cable getters
+  String? get validatedCableCustomerName => _validatedCableCustomerName;
+  String? get validatedSmartcardNumber => _validatedSmartcardNumber;
+  dynamic get validatedCableProviderId => _validatedCableProviderId;
+
+  // Backward compatible getters
+  String? get validatedCustomerName => _validatedMeterCustomerName ?? _validatedCableCustomerName;
+  String? get validatedAddress => _validatedMeterAddress;
+
+  void clearElectricityValidation() {
+    _validatedMeterCustomerName = null;
+    _validatedMeterAddress = null;
+    _validatedMeterNumber = null;
+    _validatedDiscoId = null;
+    _validatedMeterType = null;
+    notifyListeners();
+  }
+
+  void clearCableValidation() {
+    _validatedCableCustomerName = null;
+    _validatedSmartcardNumber = null;
+    _validatedCableProviderId = null;
+    notifyListeners();
+  }
+
   void clearValidation() {
-    _validatedCustomerName = null;
-    _validatedAddress = null;
+    _validatedMeterCustomerName = null;
+    _validatedMeterAddress = null;
+    _validatedMeterNumber = null;
+    _validatedDiscoId = null;
+    _validatedMeterType = null;
+    _validatedCableCustomerName = null;
+    _validatedSmartcardNumber = null;
+    _validatedCableProviderId = null;
     notifyListeners();
   }
 
@@ -83,20 +129,27 @@ class BillsProvider extends ChangeNotifier {
   }) async {
     _isValidating = true;
     _errorMessage = null;
-    _validatedCustomerName = null;
+    _validatedMeterCustomerName = null;
+    _validatedMeterAddress = null;
+    _validatedMeterNumber = null;
+    _validatedDiscoId = null;
+    _validatedMeterType = null;
     notifyListeners();
 
     try {
       final response = await _apiClient.post('/bills/electricity/validate-meter', data: {
         'disco_id': discoId,
-        'meter_number': meterNumber,
+        'meter_number': meterNumber.trim(),
         'meter_type': meterType.toLowerCase(),
       });
 
       if (response.status && response.data != null) {
         final data = response.data as Map<String, dynamic>;
-        _validatedCustomerName = data['customer_name']?.toString() ?? 'VALIDATED CUSTOMER';
-        _validatedAddress = data['address']?.toString();
+        _validatedMeterCustomerName = data['customer_name']?.toString() ?? 'VALIDATED CUSTOMER';
+        _validatedMeterAddress = data['address']?.toString();
+        _validatedMeterNumber = meterNumber.trim();
+        _validatedDiscoId = discoId;
+        _validatedMeterType = meterType.toLowerCase();
         _isValidating = false;
         notifyListeners();
         return true;
@@ -123,17 +176,20 @@ class BillsProvider extends ChangeNotifier {
     required String pin,
   }) async {
     _isLoading = true;
-    _validatedCustomerName = null;
-    _validatedAddress = null;
+    _validatedMeterCustomerName = null;
+    _validatedMeterAddress = null;
+    _validatedMeterNumber = null;
+    _validatedDiscoId = null;
+    _validatedMeterType = null;
     notifyListeners();
 
     try {
       final response = await _apiClient.post('/bills/electricity/purchase', data: {
         'disco_id': discoId,
-        'meter_number': meterNumber,
+        'meter_number': meterNumber.trim(),
         'meter_type': meterType.toLowerCase(),
         'amount': amount,
-        'phone': phone,
+        'phone': phone.trim(),
         'transaction_pin': pin,
       });
 
@@ -296,18 +352,22 @@ class BillsProvider extends ChangeNotifier {
   }) async {
     _isValidating = true;
     _errorMessage = null;
-    _validatedCustomerName = null;
+    _validatedCableCustomerName = null;
+    _validatedSmartcardNumber = null;
+    _validatedCableProviderId = null;
     notifyListeners();
 
     try {
       final response = await _apiClient.post('/bills/cable/validate-card', data: {
         'provider_id': providerId,
-        'smartcard': smartcard,
+        'smartcard': smartcard.trim(),
       });
 
       if (response.status && response.data != null) {
         final data = response.data as Map<String, dynamic>;
-        _validatedCustomerName = data['customer_name']?.toString() ?? 'VALIDATED SUBSCRIBER';
+        _validatedCableCustomerName = data['customer_name']?.toString() ?? 'VALIDATED SUBSCRIBER';
+        _validatedSmartcardNumber = smartcard.trim();
+        _validatedCableProviderId = providerId;
         _isValidating = false;
         notifyListeners();
         return true;
@@ -333,16 +393,17 @@ class BillsProvider extends ChangeNotifier {
     required String pin,
   }) async {
     _isLoading = true;
-    _validatedCustomerName = null;
-    _validatedAddress = null;
+    _validatedCableCustomerName = null;
+    _validatedSmartcardNumber = null;
+    _validatedCableProviderId = null;
     notifyListeners();
 
     try {
       final response = await _apiClient.post('/bills/cable/purchase', data: {
         'provider_id': providerId,
         'plan_id': planId,
-        'smartcard': smartcard,
-        'phone': phone,
+        'smartcard': smartcard.trim(),
+        'phone': phone.trim(),
         'transaction_pin': pin,
       });
 

@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 
 import '../../providers/dashboard_provider.dart';
 import '../navigation/main_navigation_shell.dart';
+import 'complete_profile_screen.dart';
 
 
 import '../widgets/clay_container.dart';
@@ -104,9 +105,19 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           backgroundColor: Color(0xFF10B981),
         ),
       );
-      widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
-      if (widget.onVerificationSuccess != null) {
-        widget.onVerificationSuccess!();
+
+      if (!authProvider.isProfileComplete) {
+        widget.onNavigate(
+          CompleteProfileScreen(
+            onNavigate: widget.onNavigate,
+            onCompleteSuccess: widget.onVerificationSuccess,
+          ),
+        );
+      } else {
+        widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
+        if (widget.onVerificationSuccess != null) {
+          widget.onVerificationSuccess!();
+        }
       }
     } else {
 

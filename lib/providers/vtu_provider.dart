@@ -59,10 +59,15 @@ class VtuProvider extends ChangeNotifier {
   }
 
   Future<String?> lookupNetwork(String phone) async {
-    if (phone.length < 11) return null;
+    final clean = phone.trim();
+    if (clean.length != 11) {
+      _detectedNetwork = null;
+      notifyListeners();
+      return null;
+    }
 
     try {
-      final response = await _apiClient.post('/airtime/network-lookup', data: {'phone': phone});
+      final response = await _apiClient.post('/airtime/network-lookup', data: {'phone': clean});
       if (response.status && response.data != null) {
         final data = response.data as Map<String, dynamic>;
         _detectedNetwork = data['network_key']?.toString();
@@ -70,6 +75,8 @@ class VtuProvider extends ChangeNotifier {
         return _detectedNetwork;
       }
     } catch (_) {}
+    _detectedNetwork = null;
+    notifyListeners();
     return null;
   }
 

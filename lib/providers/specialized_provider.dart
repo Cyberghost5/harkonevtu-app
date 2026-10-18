@@ -8,17 +8,23 @@ class SpecializedProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isValidating = false;
   String? _validatedCustomerName;
+  String? _validatedCustomerId;
+  String? _validatedPlatform;
   String? _errorMessage;
   List<Map<String, dynamic>> _bettingPlatforms = [];
 
   bool get isLoading => _isLoading;
   bool get isValidating => _isValidating;
   String? get validatedCustomerName => _validatedCustomerName;
+  String? get validatedCustomerId => _validatedCustomerId;
+  String? get validatedPlatform => _validatedPlatform;
   String? get errorMessage => _errorMessage;
   List<Map<String, dynamic>> get bettingPlatforms => _bettingPlatforms;
 
   void clearValidation() {
     _validatedCustomerName = null;
+    _validatedCustomerId = null;
+    _validatedPlatform = null;
     notifyListeners();
   }
 
@@ -136,6 +142,8 @@ class SpecializedProvider extends ChangeNotifier {
     _isValidating = true;
     _errorMessage = null;
     _validatedCustomerName = null;
+    _validatedCustomerId = null;
+    _validatedPlatform = null;
     notifyListeners();
 
     try {
@@ -166,6 +174,8 @@ class SpecializedProvider extends ChangeNotifier {
         } else {
           _validatedCustomerName = 'VALIDATED BETTING ACCOUNT';
         }
+        _validatedCustomerId = cleanCustomerId;
+        _validatedPlatform = cleanPlatform;
         _isValidating = false;
         notifyListeners();
         return true;
@@ -192,6 +202,8 @@ class SpecializedProvider extends ChangeNotifier {
   }) async {
     _isLoading = true;
     _validatedCustomerName = null;
+    _validatedCustomerId = null;
+    _validatedPlatform = null;
     notifyListeners();
 
     try {

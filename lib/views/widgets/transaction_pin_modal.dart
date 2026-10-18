@@ -39,11 +39,17 @@ class _TransactionPinModalState extends State<TransactionPinModal> {
     final storage = SecureStorageService();
     _savedPin = await storage.getPin();
 
+    if (mounted) setState(() {});
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      if (authProvider.isBiometricAvailable && authProvider.isBiometricEnabled) {
+      // Only auto-trigger if biometrics is available, enabled, AND a valid 4-digit PIN is actually stored!
+      if (authProvider.isBiometricAvailable &&
+          authProvider.isBiometricEnabled &&
+          _savedPin != null &&
+          _savedPin!.length == 4) {
         _triggerBiometrics(authProvider);
       }
     });
@@ -51,17 +57,51 @@ class _TransactionPinModalState extends State<TransactionPinModal> {
 
   Future<void> _triggerBiometrics(AuthProvider authProvider) async {
     if (_isAuthenticatingBio) return;
+
+    final storage = SecureStorageService();
+    _savedPin ??= await storage.getPin();
+
+    // If no valid 4-digit PIN is stored in secure storage yet:
+    if (_savedPin == null || _savedPin!.length != 4) {
+      final typedPin = _getPin();
+      if (typedPin.length != 4) {
+        setState(() {
+          _errorMessage = 'Please enter your 4-digit PIN once to authorize and link it with Biometrics.';
+        });
+        if (_focusNodes.isNotEmpty) {
+          _focusNodes[0].requestFocus();
+        }
+        return;
+      }
+
+      // User has typed 4 digits into the PIN fields -> authenticate with biometrics to confirm and link!
+      setState(() => _isAuthenticatingBio = true);
+      final authenticated = await authProvider.authenticateForTransaction(
+        reason: 'Authorize transaction and link Biometrics',
+      );
+
+      if (!mounted) return;
+      setState(() => _isAuthenticatingBio = false);
+
+      if (authenticated) {
+        await storage.savePin(typedPin);
+        Navigator.of(context).pop();
+        widget.onPinConfirmed(typedPin);
+      }
+      return;
+    }
+
+    // When valid _savedPin is available:
     setState(() => _isAuthenticatingBio = true);
-
-    _savedPin ??= await SecureStorageService().getPin();
-
-    final authenticated = await authProvider.authenticateWithBiometrics();
+    final authenticated = await authProvider.authenticateForTransaction(
+      reason: 'Authorize ${widget.amountText.isNotEmpty ? widget.amountText : 'transaction'} with Biometrics',
+    );
 
     if (!mounted) return;
     setState(() => _isAuthenticatingBio = false);
 
     if (authenticated) {
-      final pin = (_savedPin != null && _savedPin!.isNotEmpty) ? _savedPin! : _getPin();
+      final pin = _savedPin!;
       Navigator.of(context).pop();
       widget.onPinConfirmed(pin);
     }
@@ -277,9 +317,11 @@ class _TransactionPinModalState extends State<TransactionPinModal> {
               child: OutlinedButton.icon(
                 onPressed: _isAuthenticatingBio ? null : () => _triggerBiometrics(authProvider),
                 icon: const Icon(Icons.fingerprint_rounded, size: 24),
-                label: const Text(
-                  'Authorize with Biometrics (Fingerprint / FaceID)',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                label: Text(
+                  (_savedPin != null && _savedPin!.length == 4)
+                      ? 'Authorize with Biometrics (Fingerprint / Face ID)'
+                      : 'Link & Authorize with Biometrics',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: primaryColor,

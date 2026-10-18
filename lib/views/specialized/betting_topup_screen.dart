@@ -21,17 +21,38 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
   final _amountController = TextEditingController();
 
   int _selectedPlatformIndex = 0;
+  SpecializedProvider? _specProvider;
 
   @override
   void initState() {
     super.initState();
+    _customerIdController.addListener(_onCustomerIdChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<SpecializedProvider>(context, listen: false).fetchBettingPlatforms();
+      final specProvider = Provider.of<SpecializedProvider>(context, listen: false);
+      specProvider.clearValidation();
+      specProvider.fetchBettingPlatforms();
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _specProvider = Provider.of<SpecializedProvider>(context, listen: false);
+  }
+
+  void _onCustomerIdChanged() {
+    final specProvider = _specProvider ?? Provider.of<SpecializedProvider>(context, listen: false);
+    if (specProvider.validatedCustomerName != null) {
+      if (_customerIdController.text.trim() != (specProvider.validatedCustomerId ?? '')) {
+        specProvider.clearValidation();
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    _customerIdController.removeListener(_onCustomerIdChanged);
+    _specProvider?.clearValidation();
     _customerIdController.dispose();
     _amountController.dispose();
     super.dispose();
@@ -84,6 +105,27 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
     final amountText = _amountController.text.trim();
     final amount = double.tryParse(amountText) ?? 0.0;
 
+    final specProvider = Provider.of<SpecializedProvider>(context, listen: false);
+    final activePlatforms = specProvider.bettingPlatforms;
+    if (activePlatforms.isEmpty) return;
+    final safeIndex = (_selectedPlatformIndex >= 0 && _selectedPlatformIndex < activePlatforms.length) ? _selectedPlatformIndex : 0;
+    final platformKey = (activePlatforms[safeIndex]['key'] ?? activePlatforms[safeIndex]['code'] ?? activePlatforms[safeIndex]['id'] ?? 'bet9ja').toString().toLowerCase().trim();
+
+    final bool isAccountValid = specProvider.validatedCustomerName != null &&
+        customerId.isNotEmpty &&
+        customerId == (specProvider.validatedCustomerId ?? '') &&
+        platformKey == (specProvider.validatedPlatform ?? '');
+
+    if (!isAccountValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please validate your betting user ID before proceeding.'),
+          backgroundColor: Color(0xFFEF4444),
+        ),
+      );
+      return;
+    }
+
     if (customerId.isEmpty || amount < 100) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -94,10 +136,6 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
       return;
     }
 
-    final specProvider = Provider.of<SpecializedProvider>(context, listen: false);
-    final activePlatforms = specProvider.bettingPlatforms;
-    if (activePlatforms.isEmpty) return;
-    final safeIndex = (_selectedPlatformIndex >= 0 && _selectedPlatformIndex < activePlatforms.length) ? _selectedPlatformIndex : 0;
     final platformName = (activePlatforms[safeIndex]['name'] ?? 'Betting') as String;
     final currencySymbol = Provider.of<AppConfigProvider>(context, listen: false).currencySymbol;
 
@@ -151,6 +189,7 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
   Widget build(BuildContext context) {
     final specProvider = Provider.of<SpecializedProvider>(context);
     final primaryColor = Theme.of(context).primaryColor;
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleCol = Theme.of(context).colorScheme.onSurface;
     final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
@@ -173,7 +212,7 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.cloud_off_rounded, size: 64, color: Color(0xFFEF4444)),
+                const Icon(Icons.sports_soccer_rounded, size: 64, color: Color(0xFFEF4444)),
                 const SizedBox(height: 16),
                 Text(
                   specProvider.errorMessage ?? 'Failed to load betting platforms. Please try again.',
@@ -196,6 +235,14 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
 
     final activePlatforms = specProvider.bettingPlatforms;
     final safeIndex = (_selectedPlatformIndex >= 0 && _selectedPlatformIndex < activePlatforms.length) ? _selectedPlatformIndex : 0;
+    final currentPlatformKey = activePlatforms.isNotEmpty
+        ? (activePlatforms[safeIndex]['key'] ?? activePlatforms[safeIndex]['code'] ?? activePlatforms[safeIndex]['id'] ?? 'bet9ja').toString().toLowerCase().trim()
+        : null;
+
+    final bool isAccountValid = specProvider.validatedCustomerName != null &&
+        _customerIdController.text.trim().isNotEmpty &&
+        _customerIdController.text.trim() == (specProvider.validatedCustomerId ?? '') &&
+        currentPlatformKey == (specProvider.validatedPlatform ?? '');
 
     return Scaffold(
       appBar: AppBar(
@@ -282,7 +329,11 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
                       keyboardType: TextInputType.text,
                       hintText: 'Enter Account / User ID',
                       prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF94A3B8)),
-                      onChanged: (_) => specProvider.clearValidation(),
+                      onChanged: (_) {
+                        if (specProvider.validatedCustomerName != null) {
+                          specProvider.clearValidation();
+                        }
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -298,7 +349,7 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
               const SizedBox(height: 16),
 
               // Validation Helper Banner in 3D ClayContainer
-              if (specProvider.validatedCustomerName != null) ...[
+              if (isAccountValid) ...[
                 ClayContainer(
                   borderRadius: 16,
                   depth: 8,
@@ -354,11 +405,11 @@ class _BettingTopupScreenState extends State<BettingTopupScreen> {
 
               // Submit Button
               ClayButton(
-                text: specProvider.validatedCustomerName != null ? 'Fund Betting Wallet' : 'Validate Betting Account First',
+                text: isAccountValid ? 'Fund Betting Wallet' : 'Validate Betting Account First',
                 icon: Icons.sports_soccer_rounded,
                 isLoading: specProvider.isLoading,
-                color: specProvider.validatedCustomerName != null ? primaryColor : (isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
-                onPressed: (specProvider.validatedCustomerName == null || specProvider.isLoading)
+                color: isAccountValid ? primaryColor : (isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
+                onPressed: (!isAccountValid || specProvider.isLoading)
                     ? null
                     : _submitOrder,
               ),

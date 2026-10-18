@@ -3,4 +3,9 @@ class ApiConstants {
     'BASE_URL',
     defaultValue: 'https://idypay.com.ng/api/v1',
   );
+
+  static const String googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue: '',
+  );
 }

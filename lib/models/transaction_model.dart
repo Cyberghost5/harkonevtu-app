@@ -44,21 +44,37 @@ class TransactionModel {
   String? get token {
     if (metadata == null) return null;
     final val = metadata!['token'] ??
+        metadata!['purchased_code'] ??
         metadata!['purchased_token'] ??
+        metadata!['Token'] ??
+        metadata!['mainToken'] ??
         metadata!['main_token'] ??
         metadata!['creditToken'] ??
         metadata!['meter_token'] ??
+        metadata!['meterToken'] ??
         metadata!['token_code'] ??
         metadata!['pin'] ??
         metadata!['serial'] ??
         metadata!['cards'];
-    return val?.toString();
+    if (val == null) return null;
+    String str = val.toString().trim();
+    if (str.isEmpty || str.toUpperCase() == 'N/A') return null;
+    str = str.replaceFirst(RegExp(r'^token\s*[:\-]\s*', caseSensitive: false), '').trim();
+    return (str.isEmpty || str.toUpperCase() == 'N/A') ? null : str;
   }
 
   String? get units {
     if (metadata == null) return null;
-    final val = metadata!['units'] ?? metadata!['token_units'] ?? metadata!['unit'];
-    return val?.toString();
+    final val = metadata!['units'] ??
+        metadata!['meter_units'] ??
+        metadata!['RefundUnits'] ??
+        metadata!['FreeUnits'] ??
+        metadata!['token_units'] ??
+        metadata!['unit'] ??
+        metadata!['mainTokenUnit'];
+    if (val == null) return null;
+    final str = val.toString().trim();
+    return (str.isEmpty || str.toUpperCase() == 'N/A') ? null : str;
   }
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
@@ -78,16 +94,24 @@ class TransactionModel {
 
     for (final k in [
       'token',
+      'purchased_code',
       'purchased_token',
+      'Token',
+      'mainToken',
       'main_token',
       'creditToken',
       'meter_token',
+      'meterToken',
       'token_code',
       'pin',
       'serial',
       'units',
+      'meter_units',
+      'RefundUnits',
+      'FreeUnits',
       'token_units',
       'unit',
+      'mainTokenUnit',
       'meter_number',
       'smartcard',
       'customer_name'

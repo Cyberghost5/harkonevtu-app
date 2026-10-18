@@ -23,12 +23,15 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
   final _phoneController = TextEditingController();
   String _meterType = 'prepaid';
   DiscoModel? _selectedDisco;
+  BillsProvider? _billsProvider;
 
   @override
   void initState() {
     super.initState();
+    _meterController.addListener(_onMeterChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final billsProvider = Provider.of<BillsProvider>(context, listen: false);
+      billsProvider.clearElectricityValidation();
       billsProvider.fetchDiscos().then((_) {
         if (billsProvider.discos.isNotEmpty && mounted) {
           setState(() {
@@ -40,7 +43,24 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _billsProvider = Provider.of<BillsProvider>(context, listen: false);
+  }
+
+  void _onMeterChanged() {
+    final billsProvider = _billsProvider ?? Provider.of<BillsProvider>(context, listen: false);
+    if (billsProvider.validatedMeterCustomerName != null) {
+      if (_meterController.text.trim() != (billsProvider.validatedMeterNumber ?? '')) {
+        billsProvider.clearElectricityValidation();
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    _meterController.removeListener(_onMeterChanged);
+    _billsProvider?.clearElectricityValidation();
     _meterController.dispose();
     _amountController.dispose();
     _phoneController.dispose();
@@ -93,6 +113,23 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
     final phone = _phoneController.text.trim();
     final amount = double.tryParse(amountText) ?? 0.0;
 
+    final billsProvider = Provider.of<BillsProvider>(context, listen: false);
+    final bool isMeterValid = billsProvider.validatedMeterCustomerName != null &&
+        meter.isNotEmpty &&
+        meter == (billsProvider.validatedMeterNumber ?? '') &&
+        _selectedDisco?.id == billsProvider.validatedDiscoId &&
+        _meterType == billsProvider.validatedMeterType;
+
+    if (!isMeterValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please validate your meter number before proceeding.'),
+          backgroundColor: Color(0xFFEF4444),
+        ),
+      );
+      return;
+    }
+
     if (_selectedDisco == null || meter.isEmpty || amount < 500 || phone.length != 11) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -125,7 +162,7 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
     _meterController.clear();
     _amountController.clear();
     _phoneController.clear();
-    Provider.of<BillsProvider>(context, listen: false).clearValidation();
+    Provider.of<BillsProvider>(context, listen: false).clearElectricityValidation();
 
     Navigator.push(
       context,
@@ -157,6 +194,12 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final titleCol = Theme.of(context).colorScheme.onSurface;
     final subCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    final bool isMeterValid = billsProvider.validatedMeterCustomerName != null &&
+        _meterController.text.trim().isNotEmpty &&
+        _meterController.text.trim() == (billsProvider.validatedMeterNumber ?? '') &&
+        _selectedDisco?.id == billsProvider.validatedDiscoId &&
+        _meterType == billsProvider.validatedMeterType;
 
     if (billsProvider.isLoading && billsProvider.discos.isEmpty) {
       return Scaffold(
@@ -249,7 +292,7 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
                         setState(() {
                           _selectedDisco = val;
                         });
-                        billsProvider.clearValidation();
+                        billsProvider.clearElectricityValidation();
                       }
                     },
                   ),
@@ -276,7 +319,7 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
                           : (isDark ? const Color(0xFF192234) : Colors.white),
                       onTap: () {
                         setState(() => _meterType = 'prepaid');
-                        billsProvider.clearValidation();
+                        billsProvider.clearElectricityValidation();
                       },
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Center(
@@ -301,7 +344,7 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
                           : (isDark ? const Color(0xFF192234) : Colors.white),
                       onTap: () {
                         setState(() => _meterType = 'postpaid');
-                        billsProvider.clearValidation();
+                        billsProvider.clearElectricityValidation();
                       },
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Center(
@@ -334,7 +377,11 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
                       keyboardType: TextInputType.number,
                       hintText: 'Enter Meter Number',
                       prefixIcon: const Icon(Icons.speed_rounded, color: Color(0xFF94A3B8)),
-                      onChanged: (_) => billsProvider.clearValidation(),
+                      onChanged: (_) {
+                        if (billsProvider.validatedMeterCustomerName != null) {
+                          billsProvider.clearElectricityValidation();
+                        }
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -350,7 +397,7 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
               const SizedBox(height: 16),
 
               // Validation Helper Banner in 3D ClayContainer
-              if (billsProvider.validatedCustomerName != null) ...[
+              if (isMeterValid) ...[
                 ClayContainer(
                   borderRadius: 16,
                   depth: 8,
@@ -367,16 +414,16 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              billsProvider.validatedCustomerName!,
+                              billsProvider.validatedMeterCustomerName!,
                               style: TextStyle(
                                 color: titleCol,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
                             ),
-                            if (billsProvider.validatedAddress != null)
+                            if (billsProvider.validatedMeterAddress != null)
                               Text(
-                                billsProvider.validatedAddress!,
+                                billsProvider.validatedMeterAddress!,
                                 style: TextStyle(color: subCol, fontSize: 12),
                               ),
                           ],
@@ -431,11 +478,11 @@ class _ElectricityBillsScreenState extends State<ElectricityBillsScreen> {
 
               // Submit Button
               ClayButton(
-                text: billsProvider.validatedCustomerName != null ? 'Pay Electricity Bill' : 'Validate Meter Number First',
+                text: isMeterValid ? 'Pay Electricity Bill' : 'Validate Meter Number First',
                 icon: Icons.power_rounded,
                 isLoading: billsProvider.isLoading,
-                color: billsProvider.validatedCustomerName != null ? primaryColor : (isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
-                onPressed: (billsProvider.validatedCustomerName == null || billsProvider.isLoading)
+                color: isMeterValid ? primaryColor : (isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
+                onPressed: (!isMeterValid || billsProvider.isLoading)
                     ? null
                     : _submitOrder,
               ),

@@ -37,6 +37,7 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final vtuProvider = Provider.of<VtuProvider>(context, listen: false);
+      vtuProvider.clearNetworkLookup();
       vtuProvider.fetchDataNetworks();
       _loadDataPlans();
     });
@@ -56,9 +57,11 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
   }
 
   void _onPhoneChanged(String val) async {
-    if (val.length >= 10) {
-      final vtuProvider = Provider.of<VtuProvider>(context, listen: false);
-      final network = await vtuProvider.lookupNetwork(val);
+    final clean = val.trim();
+    final vtuProvider = Provider.of<VtuProvider>(context, listen: false);
+
+    if (clean.length == 11) {
+      final network = await vtuProvider.lookupNetwork(clean);
       if (network != null && mounted) {
         final lower = network.toLowerCase();
         if (_selectedNetwork != lower) {
@@ -75,6 +78,10 @@ class _DataBundlesScreenState extends State<DataBundlesScreen> {
             ),
           );
         }
+      }
+    } else {
+      if (vtuProvider.detectedNetwork != null) {
+        vtuProvider.clearNetworkLookup();
       }
     }
   }

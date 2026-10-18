@@ -1,5 +1,7 @@
 import 'dart:developer' as developer;
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../api/api_constants.dart';
 
 class GoogleAuthResult {
   final String idToken;
@@ -25,14 +27,16 @@ class GoogleAuthService {
   GoogleAuthService._internal();
 
   GoogleSignIn _buildGoogleSignIn({String? serverClientId}) {
+    final effectiveServerClientId = (serverClientId != null && serverClientId.trim().isNotEmpty)
+        ? serverClientId.trim()
+        : (ApiConstants.googleServerClientId.trim().isNotEmpty ? ApiConstants.googleServerClientId.trim() : null);
+
     return GoogleSignIn(
       scopes: const <String>[
         'email',
         'profile',
       ],
-      serverClientId: (serverClientId != null && serverClientId.trim().isNotEmpty)
-          ? serverClientId.trim()
-          : null,
+      serverClientId: effectiveServerClientId,
     );
   }
 

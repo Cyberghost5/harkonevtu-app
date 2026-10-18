@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:local_auth/local_auth.dart';
 import '../core/api/api_client.dart';
@@ -41,6 +42,9 @@ class AuthProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isBiometricAvailable => _isBiometricAvailable;
   bool get isBiometricEnabled => _isBiometricEnabled;
+  bool get isProfileComplete => _user != null && _user!.isProfileComplete;
+  bool get needsPhone => _user == null || _user!.needsPhone;
+  bool get needsPin => _user == null || _user!.needsPin;
 
   AuthProvider() {
     _initSession();
@@ -93,6 +97,26 @@ class AuthProvider extends ChangeNotifier {
         }
       }
       return didAuthenticate;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Authenticate purely for authorizing a transaction with biometrics (no login side-effects).
+  Future<bool> authenticateForTransaction({String reason = 'Authorize transaction with Biometrics'}) async {
+    try {
+      final canCheck = await _localAuth.canCheckBiometrics;
+      final isSupported = await _localAuth.isDeviceSupported();
+      if (!canCheck && !isSupported) return false;
+
+      return await _localAuth.authenticate(
+        localizedReason: reason,
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          useErrorDialogs: true,
+          biometricOnly: false,
+        ),
+      );
     } catch (_) {
       return false;
     }
@@ -244,8 +268,8 @@ class AuthProvider extends ChangeNotifier {
       }
 
       final payload = <String, dynamic>{
-        'id_token': googleResult.idToken,
         'device_name': 'mobile_app',
+        if (googleResult.idToken.isNotEmpty) 'id_token': googleResult.idToken,
         if (googleResult.accessToken != null && googleResult.accessToken!.isNotEmpty)
           'access_token': googleResult.accessToken,
         if (googleResult.email != null && googleResult.email!.isNotEmpty)
@@ -294,9 +318,31 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
         return LoginResult(success: false, message: _errorMessage!);
       }
-    } catch (e) {
-      debugPrint('[Google Sign-In Error] $e');
-      _errorMessage = 'An error occurred during Google Sign-In.';
+    } catch (e, stack) {
+      debugPrint('[Google Sign-In Error] $e\n$stack');
+      String msg = 'An error occurred during Google Sign-In.';
+
+      if (e is PlatformException) {
+        final code = e.code;
+        final rawMsg = e.message ?? '';
+        final details = e.details?.toString() ?? '';
+
+        if (code == 'sign_in_failed' || rawMsg.contains('10') || details.contains('10')) {
+          msg = 'Google Sign-In configuration error (ApiException: 10). Please verify that the app SHA-1 fingerprint is added in Firebase/Google Cloud Console.';
+        } else if (code == 'network_error' || rawMsg.contains('7') || details.contains('7')) {
+          msg = 'Network connection error during Google Sign-In. Please check your internet connection.';
+        } else if (code == 'sign_in_canceled') {
+          msg = 'Google Sign-In cancelled.';
+        } else if (rawMsg.isNotEmpty) {
+          msg = 'Google Sign-In failed: $rawMsg';
+        } else {
+          msg = 'Google Sign-In failed ($code).';
+        }
+      } else if (e.toString().isNotEmpty) {
+        msg = e.toString().replaceFirst('Exception: ', '');
+      }
+
+      _errorMessage = msg;
       _isLoading = false;
       notifyListeners();
       return LoginResult(success: false, message: _errorMessage!);
@@ -526,6 +572,58 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return ApiResponse(status: false, message: 'Failed to update profile.');
+    }
+  }
+
+  Future<ApiResponse> completeProfile({
+    String? phone,
+    String? pin,
+    String? confirmPin,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // 1. Update phone number if provided and user needs phone
+      if (phone != null && phone.trim().isNotEmpty) {
+        final profileRes = await updateProfile(
+          name: _user?.name ?? '',
+          phone: phone.trim(),
+          email: _user?.email,
+        );
+        if (!profileRes.status) {
+          _isLoading = false;
+          _errorMessage = profileRes.message;
+          notifyListeners();
+          return profileRes;
+        }
+      }
+
+      // 2. Set transaction PIN if provided and user needs PIN
+      if (pin != null && pin.trim().isNotEmpty) {
+        final pinRes = await updatePin(
+          newPin: pin.trim(),
+          confirmPin: (confirmPin ?? pin).trim(),
+        );
+        if (!pinRes.status) {
+          _isLoading = false;
+          _errorMessage = pinRes.message;
+          notifyListeners();
+          return pinRes;
+        }
+        await _storage.savePin(pin.trim());
+      }
+
+      await fetchProfile();
+      _isLoading = false;
+      notifyListeners();
+      return ApiResponse(status: true, message: 'Profile completed successfully.');
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return ApiResponse(status: false, message: 'Failed to complete profile.');
     }
   }
 

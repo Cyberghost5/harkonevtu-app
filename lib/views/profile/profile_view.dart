@@ -11,6 +11,7 @@ import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
 import '../widgets/clay_text_field.dart';
 import 'referrals_screen.dart';
+import '../../core/storage/secure_storage_service.dart';
 
 class ProfileView extends StatefulWidget {
   final Function(Widget) onNavigate;
@@ -1075,6 +1076,152 @@ class _ProfileViewState extends State<ProfileView> {
     );
   }
 
+  void _showLinkPinForBiometricsModal() {
+    final pinController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final modalBg = Theme.of(ctx).cardColor;
+        final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+        final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+        bool isSubmitting = false;
+        String? errorMessage;
+
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(modalCtx).viewInsets.bottom),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: modalBg,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        ClayContainer(
+                          depth: 10,
+                          cornerRadius: 50,
+                          color: Theme.of(ctx).primaryColor.withValues(alpha: 0.15),
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Icon(Icons.fingerprint_rounded, color: Theme.of(ctx).primaryColor, size: 28),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Link PIN for Biometrics',
+                                style: TextStyle(color: titleColor, fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                'Enable 1-tap fingerprint/face payments',
+                                style: TextStyle(color: subColor, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Please enter your 4-digit transaction PIN to securely link it with your device biometrics for instant checkout.',
+                      style: TextStyle(color: subColor, fontSize: 13, height: 1.4),
+                    ),
+                    const SizedBox(height: 16),
+                    if (errorMessage != null && errorMessage!.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                errorMessage!,
+                                style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    ClayTextField(
+                      controller: pinController,
+                      keyboardType: TextInputType.number,
+                      obscureText: true,
+                      maxLength: 4,
+                      labelText: '4-Digit Transaction PIN',
+                      prefixIcon: const Icon(Icons.pin_rounded, color: Color(0xFF94A3B8)),
+                    ),
+                    const SizedBox(height: 20),
+                    ClayButton(
+                      height: 52,
+                      depth: 12,
+                      color: Theme.of(ctx).primaryColor,
+                      isLoading: isSubmitting,
+                      onTap: () async {
+                        final pin = pinController.text.trim();
+                        if (pin.length != 4) {
+                          setModalState(() {
+                            errorMessage = 'PIN must be exactly 4 digits.';
+                          });
+                          return;
+                        }
+
+                        setModalState(() {
+                          isSubmitting = true;
+                          errorMessage = null;
+                        });
+
+                        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                        final verifyRes = await authProvider.verifyPin(pin: pin);
+
+                        if (!mounted) return;
+
+                        if (verifyRes.status) {
+                          await SecureStorageService().savePin(pin);
+                          if (modalCtx.mounted) Navigator.pop(modalCtx);
+                          _showSnackBar('Biometric payments & login activated successfully! 🎉');
+                        } else {
+                          setModalState(() {
+                            isSubmitting = false;
+                            errorMessage = verifyRes.message.isNotEmpty
+                                ? verifyRes.message
+                                : 'Incorrect transaction PIN. Please try again.';
+                          });
+                        }
+                      },
+                      child: const Text('Link Biometrics & PIN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showDeleteAccountModal() {
     final passwordController = TextEditingController();
     bool isSubmitting = false;
@@ -1471,7 +1618,7 @@ class _ProfileViewState extends State<ProfileView> {
                   _buildTile(
                     context,
                     icon: Icons.fingerprint_rounded,
-                    title: 'Biometric Quick Login',
+                    title: 'Biometric Quick Login & Payments',
                     subtitle: authProvider.isBiometricEnabled
                         ? 'Active (Fingerprint / FaceID enabled)'
                         : 'Tap switch to authenticate & activate',
@@ -1483,13 +1630,18 @@ class _ProfileViewState extends State<ProfileView> {
                         if (val) {
                           final success = await authProvider.enableBiometricsWithVerification();
                           if (success) {
-                            _showSnackBar('Biometric Quick Login enabled successfully!');
+                            final hasSavedPin = await SecureStorageService().hasPin();
+                            if (!hasSavedPin && mounted) {
+                              _showLinkPinForBiometricsModal();
+                            } else {
+                              _showSnackBar('Biometric Quick Login & Payments enabled successfully!');
+                            }
                           } else {
-                            _showSnackBar('Biometric verification failed. Quick Login not activated.', isError: true);
+                            _showSnackBar('Biometric verification failed. Not activated.', isError: true);
                           }
                         } else {
                           await authProvider.disableBiometrics();
-                          _showSnackBar('Biometric Quick Login disabled.');
+                          _showSnackBar('Biometric authentication disabled.');
                         }
                       },
                     ),

@@ -5,6 +5,7 @@ import '../../providers/app_config_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import 'login_screen.dart';
 import 'otp_verification_screen.dart';
+import 'complete_profile_screen.dart';
 import '../navigation/main_navigation_shell.dart';
 
 import '../widgets/clay_container.dart';
@@ -116,9 +117,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       await dashboardProvider.fetchDashboardData();
       if (!mounted) return;
-      widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
-      if (widget.onLoginSuccess != null) {
-        widget.onLoginSuccess!();
+
+      if (!authProvider.isProfileComplete) {
+        widget.onNavigate(
+          CompleteProfileScreen(
+            onNavigate: widget.onNavigate,
+            onCompleteSuccess: widget.onLoginSuccess,
+          ),
+        );
+      } else {
+        widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
+        if (widget.onLoginSuccess != null) {
+          widget.onLoginSuccess!();
+        }
       }
     } else if (result.message != 'Google Sign-In cancelled.') {
       ScaffoldMessenger.of(context).showSnackBar(

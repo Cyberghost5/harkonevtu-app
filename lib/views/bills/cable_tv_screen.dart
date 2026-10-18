@@ -27,19 +27,39 @@ class _CableTvScreenState extends State<CableTvScreen> {
 
   int _selectedProviderIndex = 0;
   CablePlanModel? _selectedPlan;
+  BillsProvider? _billsProvider;
 
   @override
   void initState() {
     super.initState();
+    _smartcardController.addListener(_onSmartcardChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final billsProvider = Provider.of<BillsProvider>(context, listen: false);
+      billsProvider.clearCableValidation();
       await billsProvider.fetchCableProviders();
       _loadCablePlans();
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _billsProvider = Provider.of<BillsProvider>(context, listen: false);
+  }
+
+  void _onSmartcardChanged() {
+    final billsProvider = _billsProvider ?? Provider.of<BillsProvider>(context, listen: false);
+    if (billsProvider.validatedCableCustomerName != null) {
+      if (_smartcardController.text.trim() != (billsProvider.validatedSmartcardNumber ?? '')) {
+        billsProvider.clearCableValidation();
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    _smartcardController.removeListener(_onSmartcardChanged);
+    _billsProvider?.clearCableValidation();
     _smartcardController.dispose();
     _phoneController.dispose();
     super.dispose();
@@ -104,6 +124,26 @@ class _CableTvScreenState extends State<CableTvScreen> {
     final smartcard = _smartcardController.text.trim();
     final phone = _phoneController.text.trim();
 
+    final billsProvider = Provider.of<BillsProvider>(context, listen: false);
+    final providers = _getProviders();
+    final safeIndex = _selectedProviderIndex < providers.length ? _selectedProviderIndex : 0;
+    final providerId = providers.isNotEmpty ? providers[safeIndex]['id'] : null;
+
+    final bool isSmartcardValid = billsProvider.validatedCableCustomerName != null &&
+        smartcard.isNotEmpty &&
+        smartcard == (billsProvider.validatedSmartcardNumber ?? '') &&
+        providerId == billsProvider.validatedCableProviderId;
+
+    if (!isSmartcardValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please validate your smartcard/IUC number before proceeding.'),
+          backgroundColor: Color(0xFFEF4444),
+        ),
+      );
+      return;
+    }
+
     if (_selectedPlan == null || smartcard.isEmpty || phone.length != 11) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -116,8 +156,6 @@ class _CableTvScreenState extends State<CableTvScreen> {
 
 
     final currencySymbol = Provider.of<AppConfigProvider>(context, listen: false).currencySymbol;
-    final providers = _getProviders();
-    final safeIndex = _selectedProviderIndex < providers.length ? _selectedProviderIndex : 0;
     final providerName = providers[safeIndex]['name'];
 
     showModalBottomSheet(
@@ -142,7 +180,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
 
     _smartcardController.clear();
     _phoneController.clear();
-    Provider.of<BillsProvider>(context, listen: false).clearValidation();
+    Provider.of<BillsProvider>(context, listen: false).clearCableValidation();
     setState(() {
       _selectedPlan = null;
     });
@@ -223,6 +261,14 @@ class _CableTvScreenState extends State<CableTvScreen> {
 
     final activeProviders = billsProvider.cableProviders;
     final safeSelectedIndex = _selectedProviderIndex < activeProviders.length ? _selectedProviderIndex : 0;
+    final safeProviderId = activeProviders.isNotEmpty && safeSelectedIndex < activeProviders.length
+        ? activeProviders[safeSelectedIndex]['id']
+        : null;
+
+    final bool isSmartcardValid = billsProvider.validatedCableCustomerName != null &&
+        _smartcardController.text.trim().isNotEmpty &&
+        _smartcardController.text.trim() == (billsProvider.validatedSmartcardNumber ?? '') &&
+        safeProviderId == billsProvider.validatedCableProviderId;
 
     return Scaffold(
       appBar: AppBar(
@@ -269,7 +315,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
                             setState(() {
                               _selectedProviderIndex = index;
                             });
-                            billsProvider.clearValidation();
+                            billsProvider.clearCableValidation();
                             _loadCablePlans();
                           },
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -307,7 +353,11 @@ class _CableTvScreenState extends State<CableTvScreen> {
                       keyboardType: TextInputType.number,
                       hintText: 'Enter Smartcard / IUC',
                       prefixIcon: const Icon(Icons.credit_card_rounded, color: Color(0xFF94A3B8)),
-                      onChanged: (_) => billsProvider.clearValidation(),
+                      onChanged: (_) {
+                        if (billsProvider.validatedCableCustomerName != null) {
+                          billsProvider.clearCableValidation();
+                        }
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -323,7 +373,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
               const SizedBox(height: 16),
 
               // Validation Helper Banner in 3D ClayContainer
-              if (billsProvider.validatedCustomerName != null) ...[
+              if (isSmartcardValid) ...[
                 ClayContainer(
                   borderRadius: 16,
                   depth: 8,
@@ -337,7 +387,7 @@ class _CableTvScreenState extends State<CableTvScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          billsProvider.validatedCustomerName!,
+                          billsProvider.validatedCableCustomerName!,
                           style: TextStyle(
                             color: titleCol,
                             fontWeight: FontWeight.bold,
@@ -436,11 +486,11 @@ class _CableTvScreenState extends State<CableTvScreen> {
 
               // Submit Button
               ClayButton(
-                text: billsProvider.validatedCustomerName != null ? 'Subscribe Cable TV' : 'Validate Smartcard Number First',
+                text: isSmartcardValid ? 'Subscribe Cable TV' : 'Validate Smartcard Number First',
                 icon: Icons.tv_rounded,
                 isLoading: billsProvider.isLoading,
-                color: billsProvider.validatedCustomerName != null ? primaryColor : (isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
-                onPressed: (billsProvider.validatedCustomerName == null || billsProvider.isLoading)
+                color: isSmartcardValid ? primaryColor : (isDark ? const Color(0xFF1E293B) : const Color(0xFFCBD5E1)),
+                onPressed: (!isSmartcardValid || billsProvider.isLoading)
                     ? null
                     : _submitOrder,
               ),
