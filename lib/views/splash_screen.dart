@@ -62,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // Check force update
     if (configProvider.isForceUpdate) {
-      widget.onNavigate(const ForceUpdateScreen());
+      widget.onNavigate(ForceUpdateScreen(onNavigate: widget.onNavigate));
       return;
     }
 
@@ -178,7 +178,7 @@ class _SplashScreenState extends State<SplashScreen> {
               ],
 
               Text(
-                'Fast • Secure • Automated VTU',
+                'Loading, please wait...',
                 style: TextStyle(
                   color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                   fontSize: 14,

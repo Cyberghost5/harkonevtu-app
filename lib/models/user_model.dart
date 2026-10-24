@@ -64,6 +64,11 @@ class UserModel {
   bool get needsPhone => phone.trim().isEmpty;
   bool get needsPin => !hasPin;
   bool get isProfileComplete => !needsPhone && !needsPin;
+  bool get isKycVerified =>
+      kycStatus?.toLowerCase() == 'verified' ||
+      kycStatus == '1' ||
+      kycStatus == 'approved';
+  bool get isKycPending => kycStatus?.toLowerCase() == 'pending';
 
   UserModel({
     required this.id,
@@ -121,7 +126,12 @@ class UserModel {
       userType: json['user_type']?.toString() ?? json['role']?.toString() ?? 'user',
       isActive: json['is_active'] == true || json['status'] == 'active' || json['status'] == 1 || json['is_active'] == 1,
       referralCode: json['referral_code']?.toString() ?? json['ref_code']?.toString(),
-      kycStatus: json['kyc_status']?.toString(),
+      kycStatus: json['kyc_status']?.toString() ??
+          (json['kyc_verified'] == true ||
+                  json['is_kyc_verified'] == true ||
+                  json['is_verified'] == true
+              ? 'verified'
+              : null),
       avatar: json['avatar']?.toString() ?? json['profile_photo_url']?.toString() ?? json['avatar_url']?.toString() ?? json['profile_picture']?.toString(),
       bankName: json['bank_name']?.toString(),
       bankAccountNumber: json['bank_account_number']?.toString(),

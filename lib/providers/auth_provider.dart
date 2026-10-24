@@ -292,7 +292,17 @@ class AuthProvider extends ChangeNotifier {
           }
 
           if (resData['user'] != null && resData['user'] is Map<String, dynamic>) {
-            _user = UserModel.fromJson(resData['user'] as Map<String, dynamic>);
+            final userMap = Map<String, dynamic>.from(resData['user'] as Map<String, dynamic>);
+            if (resData.containsKey('is_pin_set')) {
+              userMap['is_pin_set'] = resData['is_pin_set'];
+            }
+            if (resData.containsKey('is_phone_set')) {
+              userMap['is_phone_set'] = resData['is_phone_set'];
+            }
+            if (resData.containsKey('requires_pin_setup')) {
+              userMap['requires_pin_setup'] = resData['requires_pin_setup'];
+            }
+            _user = UserModel.fromJson(userMap);
             await _storage.saveUserData(_user!.toJson());
           }
 
@@ -585,33 +595,48 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. Update phone number if provided and user needs phone
-      if (phone != null && phone.trim().isNotEmpty) {
-        final profileRes = await updateProfile(
-          name: _user?.name ?? '',
-          phone: phone.trim(),
-          email: _user?.email,
-        );
-        if (!profileRes.status) {
-          _isLoading = false;
-          _errorMessage = profileRes.message;
-          notifyListeners();
-          return profileRes;
+      final payload = <String, dynamic>{
+        if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+        if (pin != null && pin.trim().isNotEmpty) ...{
+          'pin': pin.trim(),
+          'pin_confirmation': (confirmPin ?? pin).trim(),
+        },
+      };
+
+      // 1. Try unified /auth/complete-profile endpoint first
+      var response = await _apiClient.post('/auth/complete-profile', data: payload);
+
+      if (!response.status) {
+        // Fallback: update phone then update PIN via user endpoints
+        if (phone != null && phone.trim().isNotEmpty) {
+          final profileRes = await updateProfile(
+            name: _user?.name ?? '',
+            phone: phone.trim(),
+            email: _user?.email,
+          );
+          if (!profileRes.status) {
+            _isLoading = false;
+            _errorMessage = profileRes.message;
+            notifyListeners();
+            return profileRes;
+          }
+        }
+
+        if (pin != null && pin.trim().isNotEmpty) {
+          final pinRes = await updatePin(
+            newPin: pin.trim(),
+            confirmPin: (confirmPin ?? pin).trim(),
+          );
+          if (!pinRes.status) {
+            _isLoading = false;
+            _errorMessage = pinRes.message;
+            notifyListeners();
+            return pinRes;
+          }
         }
       }
 
-      // 2. Set transaction PIN if provided and user needs PIN
       if (pin != null && pin.trim().isNotEmpty) {
-        final pinRes = await updatePin(
-          newPin: pin.trim(),
-          confirmPin: (confirmPin ?? pin).trim(),
-        );
-        if (!pinRes.status) {
-          _isLoading = false;
-          _errorMessage = pinRes.message;
-          notifyListeners();
-          return pinRes;
-        }
         await _storage.savePin(pin.trim());
       }
 
@@ -856,6 +881,8 @@ class AuthProvider extends ChangeNotifier {
     try {
       final payload = {
         'pin': pin.trim(),
+        'transaction_pin': pin.trim(),
+        'confirm_upgrade': true,
       };
 
       final response = await _apiClient.post('/user/upgrade-agent', data: payload);
@@ -875,7 +902,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<ApiResponse> submitKyc({
-    required String bvn,
+    String idType = 'bvn',
+    String idNumber = '',
+    String? bvn,
     String? nin,
     String? dob,
   }) async {
@@ -883,16 +912,21 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final effectiveType = idNumber.isNotEmpty
+          ? idType.trim().toLowerCase()
+          : (bvn != null && bvn.trim().isNotEmpty ? 'bvn' : 'nin');
+      final effectiveNumber = idNumber.isNotEmpty
+          ? idNumber.trim()
+          : (effectiveType == 'bvn' ? (bvn ?? '').trim() : (nin ?? '').trim());
+
       final payload = <String, dynamic>{
-        'bvn': bvn.trim(),
-        if (nin != null && nin.isNotEmpty) 'nin': nin.trim(),
-        if (dob != null && dob.isNotEmpty) 'dob': dob.trim(),
+        'id_type': effectiveType,
+        'id_number': effectiveNumber,
+        if (effectiveType == 'bvn') 'bvn': effectiveNumber,
+        if (effectiveType == 'nin') 'nin': effectiveNumber,
       };
 
-      var response = await _apiClient.post('/user/dva/generate', data: {'bvn': bvn.trim()});
-      if (!response.status) {
-        response = await _apiClient.post('/user/kyc/submit', data: payload);
-      }
+      final response = await _apiClient.post('/kyc/submit', data: payload);
 
       if (response.status) {
         await fetchProfile();
@@ -905,6 +939,25 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return ApiResponse(status: false, message: 'KYC submission failed. Please check your BVN/NIN details.');
+    }
+  }
+
+  Future<ApiResponse> fetchKycStatus() async {
+    try {
+      final response = await _apiClient.get('/kyc/status');
+      if (response.status && response.data != null && response.data is Map<String, dynamic>) {
+        final data = response.data as Map<String, dynamic>;
+        if (data['kyc_status'] != null && _user != null) {
+          final userMap = _user!.toJson();
+          userMap['kyc_status'] = data['kyc_status'];
+          _user = UserModel.fromJson(userMap);
+          await _storage.saveUserData(_user!.toJson());
+          notifyListeners();
+        }
+      }
+      return response;
+    } catch (e) {
+      return ApiResponse(status: false, message: 'Failed to fetch KYC status.');
     }
   }
 

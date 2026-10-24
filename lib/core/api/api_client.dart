@@ -56,6 +56,8 @@ class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
   factory ApiClient() => _instance;
 
+  static String currentAppVersion = '4.0.0';
+
   late final Dio _dio;
   final SecureStorageService _storage = SecureStorageService();
   Function()? onUnauthenticated;
@@ -76,6 +78,7 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          options.headers['X-App-Version'] = currentAppVersion;
           final token = await _storage.getToken();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';

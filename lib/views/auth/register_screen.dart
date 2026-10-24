@@ -77,19 +77,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registration successful! Please verify your OTP.'),
-          backgroundColor: Color(0xFF10B981),
-        ),
-      );
-      widget.onNavigate(
-        OtpVerificationScreen(
-          email: _emailController.text.trim(),
-          onNavigate: widget.onNavigate,
-          onVerificationSuccess: widget.onLoginSuccess,
-        ),
-      );
+      if (authProvider.isAuthenticated) {
+        if (!authProvider.isProfileComplete) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registration successful! Please create your transaction PIN.'),
+              backgroundColor: Color(0xFF10B981),
+            ),
+          );
+          widget.onNavigate(
+            CompleteProfileScreen(
+              onNavigate: widget.onNavigate,
+              onCompleteSuccess: widget.onLoginSuccess,
+            ),
+          );
+        } else {
+          widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
+          if (widget.onLoginSuccess != null) widget.onLoginSuccess!();
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registration successful! Please verify your OTP.'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+        widget.onNavigate(
+          OtpVerificationScreen(
+            email: _emailController.text.trim(),
+            onNavigate: widget.onNavigate,
+            onVerificationSuccess: widget.onLoginSuccess,
+          ),
+        );
+      }
     } else {
       final errorMsg = authProvider.errorMessage ?? 'Registration failed. Check your inputs.';
       ScaffoldMessenger.of(context).showSnackBar(
@@ -104,8 +124,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _handleGoogleSignIn() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    final configProvider = Provider.of<AppConfigProvider>(context, listen: false);
 
-    final result = await authProvider.signInWithGoogle();
+    final result = await authProvider.signInWithGoogle(
+      serverClientId: configProvider.googleClientId,
+    );
     if (!mounted) return;
 
     if (result.success) {

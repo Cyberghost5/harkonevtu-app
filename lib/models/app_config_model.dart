@@ -144,6 +144,10 @@ class AppConfigModel {
   final PaymentGatewaysModel paymentGateways;
   final SupportInfoModel support;
   final List<OnboardingSlideModel> onboardingSlides;
+  final bool googleAuthEnabled;
+  final String googleClientId;
+  final double agentUpgradeFee;
+  final double kycFee;
 
   AppConfigModel({
     required this.appName,
@@ -166,9 +170,54 @@ class AppConfigModel {
     required this.paymentGateways,
     required this.support,
     required this.onboardingSlides,
+    this.googleAuthEnabled = true,
+    this.googleClientId = '',
+    this.agentUpgradeFee = 2500.0,
+    this.kycFee = 0.0,
   });
 
   factory AppConfigModel.fromJson(Map<String, dynamic> json) {
+    bool resolveGoogleEnabled() {
+      if (json['google_auth'] != null && json['google_auth'] is Map) {
+        final val = json['google_auth']['enabled'];
+        return val == true || val == 1 || val == '1';
+      }
+      if (json['google_auth_status'] != null) {
+        final val = json['google_auth_status'];
+        return val == '1' || val == 1 || val == true;
+      }
+      return true;
+    }
+
+    String resolveGoogleClientId() {
+      if (json['google_auth'] != null && json['google_auth'] is Map) {
+        return (json['google_auth']['client_id'] ?? '').toString().trim();
+      }
+      return (json['google_client_id'] ?? '').toString().trim();
+    }
+
+    double resolveUpgradeFee() {
+      if (json['charges'] != null && json['charges'] is Map) {
+        final v = json['charges']['agent_upgrade_fee'];
+        if (v != null) return double.tryParse(v.toString()) ?? 2500.0;
+      }
+      if (json['agent_upgrade_fee'] != null) {
+        return double.tryParse(json['agent_upgrade_fee'].toString()) ?? 2500.0;
+      }
+      return 2500.0;
+    }
+
+    double resolveKycFee() {
+      if (json['charges'] != null && json['charges'] is Map) {
+        final v = json['charges']['kyc_fee'];
+        if (v != null) return double.tryParse(v.toString()) ?? 0.0;
+      }
+      if (json['kyc_fee'] != null) {
+        return double.tryParse(json['kyc_fee'].toString()) ?? 0.0;
+      }
+      return 0.0;
+    }
+
     return AppConfigModel(
       appName: json['app_name'] ?? 'Harkone VTU',
       siteName: json['site_name'] ?? 'Harkone VTU',
@@ -180,8 +229,8 @@ class AppConfigModel {
       currencySymbol: json['currency_symbol'] ?? '₦',
       appVersion: json['app_version'] ?? '1.0.0',
       minVersion: json['min_version'] ?? '1.0.0',
-      forceUpdate: json['force_update'] ?? false,
-      maintenanceMode: json['maintenance_mode'] ?? false,
+      forceUpdate: json['force_update'] == true || json['force_update'] == 1 || json['force_update'] == '1',
+      maintenanceMode: json['maintenance_mode'] == true || json['maintenance_mode'] == 1 || json['maintenance_mode'] == '1',
       maintenanceMessage: json['maintenance_message'] ?? 'Platform is under routine maintenance. Please check back shortly.',
       updateUrl: json['update_url'] ?? json['app_update_url'],
       playStoreUrl: json['play_store_url'] ?? json['playstore_url'],
@@ -189,10 +238,14 @@ class AppConfigModel {
       services: AppServicesModel.fromJson(json['services'] ?? {}),
       paymentGateways: PaymentGatewaysModel.fromJson(json['payment_gateways'] ?? {}),
       support: SupportInfoModel.fromJson(json['support'] ?? {}),
+      agentUpgradeFee: resolveUpgradeFee(),
+      kycFee: resolveKycFee(),
       onboardingSlides: (json['onboarding_slides'] as List<dynamic>?)
               ?.map((e) => OnboardingSlideModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      googleAuthEnabled: resolveGoogleEnabled(),
+      googleClientId: resolveGoogleClientId(),
     );
   }
 }

@@ -44,37 +44,66 @@ class GoogleAuthService {
   /// Returns [GoogleAuthResult] containing id_token and profile details,
   /// or null if the user cancels the sign-in modal.
   Future<GoogleAuthResult?> signIn({String? serverClientId}) async {
+    final cleanServerClientId = (serverClientId != null && serverClientId.trim().isNotEmpty)
+        ? serverClientId.trim()
+        : (ApiConstants.googleServerClientId.trim().isNotEmpty ? ApiConstants.googleServerClientId.trim() : null);
+
     try {
-      final GoogleSignIn googleSignIn = _buildGoogleSignIn(serverClientId: serverClientId);
-
-      // Clear previous cached session if needed so the user can choose account
-      if (await googleSignIn.isSignedIn()) {
+      return await _performSignIn(serverClientId: cleanServerClientId);
+    } on PlatformException catch (e) {
+      developer.log('Google Sign-In PlatformException: code=${e.code}, msg=${e.message}, details=${e.details}');
+      // If sign-in failed with a serverClientId configuration mismatch (e.g. ApiException 10 or sign_in_failed)
+      // and a serverClientId was provided, retry gracefully without serverClientId so the user can still
+      // select their Google account and authenticate.
+      if (cleanServerClientId != null &&
+          (e.code == 'sign_in_failed' ||
+              (e.message != null && (e.message!.contains('10') || e.message!.contains('12500'))))) {
+        developer.log('Retrying Google Sign-In with standard client fallback (without serverClientId)...');
         try {
-          await googleSignIn.signOut();
-        } catch (_) {}
+          return await _performSignIn(serverClientId: null);
+        } catch (fallbackError) {
+          developer.log('Fallback Google Sign-In also failed: $fallbackError');
+          rethrow;
+        }
       }
-
-      final GoogleSignInAccount? account = await googleSignIn.signIn();
-      if (account == null) {
-        developer.log('Google Sign-In was cancelled by the user.');
-        return null;
-      }
-
-      final GoogleSignInAuthentication auth = await account.authentication;
-      final String? idToken = auth.idToken;
-
-      return GoogleAuthResult(
-        idToken: idToken ?? '',
-        accessToken: auth.accessToken,
-        email: account.email,
-        displayName: account.displayName,
-        photoUrl: account.photoUrl,
-        id: account.id,
-      );
+      rethrow;
     } catch (e, stack) {
       developer.log('Google Sign-In error: $e', error: e, stackTrace: stack);
       rethrow;
     }
+  }
+
+  Future<GoogleAuthResult?> _performSignIn({String? serverClientId}) async {
+    final GoogleSignIn googleSignIn = _buildGoogleSignIn(serverClientId: serverClientId);
+
+    // Clear previous cached session if needed so the user can choose account
+    try {
+      if (await googleSignIn.isSignedIn()) {
+        await googleSignIn.signOut();
+      }
+    } catch (_) {}
+
+    final GoogleSignInAccount? account = await googleSignIn.signIn();
+    if (account == null) {
+      developer.log('Google Sign-In was cancelled by the user.');
+      return null;
+    }
+
+    GoogleSignInAuthentication? auth;
+    try {
+      auth = await account.authentication;
+    } catch (authError) {
+      developer.log('Google account.authentication notice: $authError');
+    }
+
+    return GoogleAuthResult(
+      idToken: auth?.idToken ?? '',
+      accessToken: auth?.accessToken,
+      email: account.email,
+      displayName: account.displayName,
+      photoUrl: account.photoUrl,
+      id: account.id,
+    );
   }
 
   /// Signs out from Google on the device.

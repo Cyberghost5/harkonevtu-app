@@ -158,8 +158,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   void _handleGoogleSignIn() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final configProvider = Provider.of<AppConfigProvider>(context, listen: false);
 
-    final result = await authProvider.signInWithGoogle();
+    final result = await authProvider.signInWithGoogle(
+      serverClientId: configProvider.googleClientId,
+    );
     if (!mounted) return;
 
     if (result.success) {
@@ -236,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Sign in to access your ${configProvider.appName} wallet',
+                    'Sign in to access your ${configProvider.appName} account',
                     style: TextStyle(
                       color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                       fontSize: 14,

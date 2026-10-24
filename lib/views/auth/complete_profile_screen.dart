@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../navigation/main_navigation_shell.dart';
+import 'login_screen.dart';
 import '../widgets/clay_button.dart';
 import '../widgets/clay_container.dart';
 import '../widgets/clay_text_field.dart';
@@ -180,284 +181,356 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     final needsPhone = user == null || user.needsPhone;
     final needsPin = user == null || user.needsPin;
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        title: const Text(
-          'Complete Profile',
-          style: TextStyle(fontWeight: FontWeight.bold),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please create your 4-digit transaction PIN to continue.'),
+            backgroundColor: Color(0xFFF59E0B),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      },
+      child: Scaffold(
+        backgroundColor: bgColor,
+        appBar: AppBar(
+          title: const Text(
+            'Complete Profile',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
+          automaticallyImplyLeading: false,
+          elevation: 0,
         ),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Top Icon / Clay Badge
-                Center(
-                  child: ClayContainer(
-                    depth: 12,
-                    borderRadius: 30,
-                    color: cardBg,
-                    padding: const EdgeInsets.all(22),
-                    child: Icon(
-                      Icons.verified_user_rounded,
-                      size: 48,
-                      color: primaryColor,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Top Icon / Clay Badge
+                  Center(
+                    child: ClayContainer(
+                      depth: 12,
+                      borderRadius: 30,
+                      color: cardBg,
+                      padding: const EdgeInsets.all(22),
+                      child: Icon(
+                        Icons.verified_user_rounded,
+                        size: 48,
+                        color: primaryColor,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                Text(
-                  'Finish Setting Up Your Account',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: textColor,
-                    letterSpacing: -0.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-
-                Text(
-                  'To protect your wallet and authorize instant airtime, data, and bill payments, please complete the requirements below.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: subColor,
-                    height: 1.45,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 28),
-
-                // Error alert box
-                if (_errorMessage != null) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.4)),
+                  Text(
+                    'Finish Setting Up Your Account',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: textColor,
+                      letterSpacing: -0.5,
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 20),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _errorMessage!,
-                            style: const TextStyle(
-                              color: Color(0xFFEF4444),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+
+                  Text(
+                    'To protect your wallet and authorize instant airtime, data, and bill payments, please complete the requirements below.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: subColor,
+                      height: 1.45,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 28),
+
+                  // Error alert box
+                  if (_errorMessage != null) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: const TextStyle(
+                                color: Color(0xFFEF4444),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
+                    const SizedBox(height: 20),
+                  ],
 
-                // ── SECTION 1: PHONE NUMBER ──────────────────────────────────
-                if (needsPhone) ...[
-                  ClayContainer(
-                    depth: 6,
-                    borderRadius: 20,
-                    color: cardBg,
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: primaryColor.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(Icons.phone_android_rounded, color: primaryColor, size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Mobile Phone Number',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: textColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Required for SMS notifications & wallet identification',
-                                    style: TextStyle(fontSize: 12, color: subColor),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        ClayTextField(
-                          controller: _phoneController,
-                          labelText: 'Phone Number',
-                          hintText: 'e.g. 08012345678',
-                          keyboardType: TextInputType.phone,
-                          maxLength: 14,
-                          prefixIcon: Icons.phone_outlined,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ] else ...[
-                  // Phone already set badge
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 22),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  // ── SECTION 1: PHONE NUMBER ──────────────────────────────────
+                  if (needsPhone) ...[
+                    ClayContainer(
+                      depth: 6,
+                      borderRadius: 20,
+                      color: cardBg,
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              const Text(
-                                'Phone Number Connected',
-                                style: TextStyle(
-                                  color: Color(0xFF10B981),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: primaryColor.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
+                                child: Icon(Icons.phone_android_rounded, color: primaryColor, size: 20),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                user?.phone ?? '',
-                                style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 14),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Mobile Phone Number',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Required for SMS notifications & wallet identification',
+                                      style: TextStyle(fontSize: 12, color: subColor),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+                          ClayTextField(
+                            controller: _phoneController,
+                            labelText: 'Phone Number',
+                            hintText: 'e.g. 08012345678',
+                            keyboardType: TextInputType.phone,
+                            maxLength: 14,
+                            prefixIcon: Icons.phone_outlined,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-
-                // ── SECTION 2: TRANSACTION PIN ───────────────────────────────
-                if (needsPin) ...[
-                  ClayContainer(
-                    depth: 6,
-                    borderRadius: 20,
-                    color: cardBg,
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(Icons.lock_outline_rounded, color: Color(0xFFF59E0B), size: 20),
+                    const SizedBox(height: 20),
+                  ] else ...[
+                    // Phone already set badge
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Phone Number Connected',
+                                  style: TextStyle(
+                                    color: Color(0xFF10B981),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  user?.phone ?? '',
+                                  style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 14),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Create 4-Digit Transaction PIN',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: textColor,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
+                  // ── SECTION 2: TRANSACTION PIN ───────────────────────────────
+                  if (needsPin) ...[
+                    ClayContainer(
+                      depth: 6,
+                      borderRadius: 20,
+                      color: cardBg,
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.lock_outline_rounded, color: Color(0xFFF59E0B), size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Create 4-Digit Transaction PIN',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: textColor,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Used to authorize purchases, data, and bill payments',
-                                    style: TextStyle(fontSize: 12, color: subColor),
-                                  ),
-                                ],
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Used to authorize purchases, data, and bill payments',
+                                      style: TextStyle(fontSize: 12, color: subColor),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        ClayTextField(
-                          controller: _pinController,
-                          labelText: '4-Digit Transaction PIN',
-                          hintText: '••••',
-                          obscureText: _obscurePin,
-                          keyboardType: TextInputType.number,
-                          maxLength: 4,
-                          prefixIcon: Icons.lock_clock_outlined,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePin ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                              color: subColor,
-                              size: 20,
-                            ),
-                            onPressed: () => setState(() => _obscurePin = !_obscurePin),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 14),
-                        ClayTextField(
-                          controller: _confirmPinController,
-                          labelText: 'Confirm 4-Digit PIN',
-                          hintText: '••••',
-                          obscureText: _obscureConfirmPin,
-                          keyboardType: TextInputType.number,
-                          maxLength: 4,
-                          prefixIcon: Icons.lock_reset_rounded,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscureConfirmPin ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                              color: subColor,
-                              size: 20,
+                          const SizedBox(height: 16),
+                          ClayTextField(
+                            controller: _pinController,
+                            labelText: '4-Digit Transaction PIN',
+                            hintText: '••••',
+                            obscureText: _obscurePin,
+                            keyboardType: TextInputType.number,
+                            maxLength: 4,
+                            prefixIcon: Icons.lock_clock_outlined,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePin ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                color: subColor,
+                                size: 20,
+                              ),
+                              onPressed: () => setState(() => _obscurePin = !_obscurePin),
                             ),
-                            onPressed: () => setState(() => _obscureConfirmPin = !_obscureConfirmPin),
                           ),
+                          const SizedBox(height: 14),
+                          ClayTextField(
+                            controller: _confirmPinController,
+                            labelText: 'Confirm 4-Digit PIN',
+                            hintText: '••••',
+                            obscureText: _obscureConfirmPin,
+                            keyboardType: TextInputType.number,
+                            maxLength: 4,
+                            prefixIcon: Icons.lock_reset_rounded,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirmPin ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                color: subColor,
+                                size: 20,
+                              ),
+                              onPressed: () => setState(() => _obscureConfirmPin = !_obscureConfirmPin),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                  ],
+
+                  // Submit Button
+                  ClayButton(
+                    text: 'Save & Proceed to Dashboard',
+                    icon: Icons.arrow_forward_rounded,
+                    isLoading: authProvider.isLoading,
+                    onPressed: authProvider.isLoading ? null : _handleSubmit,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Safe Logout Option (to exit without bypassing PIN)
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Log Out?'),
+                            content: const Text(
+                              'Are you sure you want to log out? You will be required to set your transaction PIN when you log back in.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: const Color(0xFFEF4444),
+                                ),
+                                child: const Text('Log Out'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          await authProvider.logout();
+                          if (mounted) {
+                            final navigateCallback = widget.onNavigate ??
+                                (screen) {
+                                  Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(builder: (_) => screen),
+                                    (route) => false,
+                                  );
+                                };
+                            navigateCallback(
+                              LoginScreen(
+                                onNavigate: navigateCallback,
+                                onLoginSuccess: widget.onCompleteSuccess,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      icon: Icon(Icons.logout_rounded, size: 16, color: subColor),
+                      label: Text(
+                        'Log out and set up later',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: subColor,
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 12),
                 ],
-
-                // Submit Button
-                ClayButton(
-                  text: 'Save & Proceed to Dashboard',
-                  icon: Icons.arrow_forward_rounded,
-                  isLoading: authProvider.isLoading,
-                  onPressed: authProvider.isLoading ? null : _handleSubmit,
-                ),
-                const SizedBox(height: 20),
-              ],
+              ),
             ),
           ),
         ),

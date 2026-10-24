@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class ClayContainer extends StatelessWidget {
+  final double? width;
+  final double? height;
   final Widget child;
   final double borderRadius;
   final double depth;
@@ -15,6 +17,8 @@ class ClayContainer extends StatelessWidget {
   ClayContainer({
     super.key,
     required this.child,
+    this.width,
+    this.height,
     double? borderRadius,
     double? cornerRadius,
     double? depth,
@@ -69,6 +73,8 @@ class ClayContainer extends StatelessWidget {
     final offset = isRecessed ? -currentDepth / 2 : currentDepth / 2;
 
     Widget content = Container(
+      width: width,
+      height: height,
       padding: padding,
       margin: margin,
       decoration: BoxDecoration(
