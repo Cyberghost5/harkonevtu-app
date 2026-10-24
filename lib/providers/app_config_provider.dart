@@ -138,7 +138,6 @@ class AppConfigProvider extends ChangeNotifier {
   String? get appStoreUrl => _config?.appStoreUrl;
   bool get isGoogleAuthEnabled => _config?.googleAuthEnabled ?? true;
   String get googleClientId => _config?.googleClientId ?? '';
-  double get agentUpgradeFee => _config?.agentUpgradeFee ?? 2500.0;
   SupportInfoModel? get support => _config?.support;
   String? get logo1Url => _config?.logo1Url;
   String? get logo2Url => _config?.logo2Url;
