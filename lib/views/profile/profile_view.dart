@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/app_config_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../auth/login_screen.dart';
 
 import '../widgets/clay_container.dart';
@@ -601,7 +602,7 @@ class _ProfileViewState extends State<ProfileView> {
 
     final upgradeFee = configProvider.agentUpgradeFee;
     final currencySymbol = configProvider.currencySymbol;
-    final walletBalance = user?.balance ?? 0.0;
+    final walletBalance = user?.wallet?.balance ?? user?.balance ?? 0.0;
     final hasSufficientBalance = walletBalance >= upgradeFee;
 
     final pinController = TextEditingController();

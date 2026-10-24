@@ -69,6 +69,7 @@ class UserModel {
       kycStatus == '1' ||
       kycStatus == 'approved';
   bool get isKycPending => kycStatus?.toLowerCase() == 'pending';
+  double get balance => wallet?.balance ?? 0.0;
 
   UserModel({
     required this.id,
