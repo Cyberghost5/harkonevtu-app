@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "62911045279",
-    "project_id": "idypay",
-    "storage_bucket": "idypay.firebasestorage.app"
+    "project_number": "551390537530",
+    "project_id": "tincitybill-71f88",
+    "storage_bucket": "tincitybill-71f88.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:62911045279:android:42154b133b82e4c1590caa",
+        "mobilesdk_app_id": "1:551390537530:android:b9167aca46e323121f9203",
         "android_client_info": {
-          "package_name": "com.harkonedesigns.idypay"
+          "package_name": "com.harkonedesigns.tincitybill"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyC8A2UpHPR9JA3xahlhD0vlBE5SOTQoT_k"
+          "current_key": "AIzaSyB9LfzQfthK6nDdBBPQ9W-BhhCsZHY6x-g"
         }
       ],
       "services": {
