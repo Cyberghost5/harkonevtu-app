@@ -12,7 +12,20 @@
           "package_name": "com.harkonedesigns.tincitybill"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "62911045279-04fl35mehvv0evk698qj1qjg993h71no.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.harkonedesigns.idypay",
+            "certificate_hash": "0b2ccdaaab218128c8be581f7c20c29a8ba615ce"
+          }
+        },
+        {
+          "client_id": "62911045279-eoc6g6ck4qufdr1jqlvjhjbngk0rnpmt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB9LfzQfthK6nDdBBPQ9W-BhhCsZHY6x-g"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "62911045279-eoc6g6ck4qufdr1jqlvjhjbngk0rnpmt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
