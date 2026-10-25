@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "660239500980-3hanflbmljlpaj6odp73kjcg824uconu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.harkonedesigns.dakeventures",
+            "certificate_hash": "e2e40c5d982b41cf8e4daac0ff94a524c4d7448e"
+          }
+        },
+        {
           "client_id": "660239500980-f9s9sgakcbbqaqf7d3i1o1tsmce6fo0d.apps.googleusercontent.com",
           "client_type": 3
         }
