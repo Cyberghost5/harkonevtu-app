@@ -14,15 +14,15 @@
       },
       "oauth_client": [
         {
-          "client_id": "62911045279-04fl35mehvv0evk698qj1qjg993h71no.apps.googleusercontent.com",
+          "client_id": "686309797782-h7mj3u6nof52qe8scjki6vbne4urb0j6.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.harkonedesigns.idypay",
-            "certificate_hash": "0b2ccdaaab218128c8be581f7c20c29a8ba615ce"
+            "package_name": "com.harkonedesigns.nmilleniumresource",
+            "certificate_hash": "805db914e11a78034051b2fd5aa9ded803ef0c5f"
           }
         },
         {
-          "client_id": "62911045279-eoc6g6ck4qufdr1jqlvjhjbngk0rnpmt.apps.googleusercontent.com",
+          "client_id": "686309797782-j1176klhi6r422jgcoe4p6mjf2teef1c.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -35,7 +35,7 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "62911045279-eoc6g6ck4qufdr1jqlvjhjbngk0rnpmt.apps.googleusercontent.com",
+              "client_id": "686309797782-j1176klhi6r422jgcoe4p6mjf2teef1c.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
