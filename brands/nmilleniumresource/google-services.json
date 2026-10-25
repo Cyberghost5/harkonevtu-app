@@ -12,7 +12,20 @@
           "package_name": "com.harkonedesigns.nmilleniumresource"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "686309797782-h7mj3u6nof52qe8scjki6vbne4urb0j6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.harkonedesigns.nmilleniumresource",
+            "certificate_hash": "805db914e11a78034051b2fd5aa9ded803ef0c5f"
+          }
+        },
+        {
+          "client_id": "686309797782-j1176klhi6r422jgcoe4p6mjf2teef1c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAnu_oiDOByQUPbuqLS6uJ0JS_DQ_U8fyA"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "686309797782-j1176klhi6r422jgcoe4p6mjf2teef1c.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
