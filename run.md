@@ -117,8 +117,18 @@ Upon successful compilation, both signed binaries will be placed in:
 
 When you update core codebase features or fix bugs on `main` in the future:
 
-### 1. On Local Machine (Push Updates & Sync Brand Branch):
+### 1. On Local Machine (Push Updates & Sync All Branches):
 
+#### Option A: One-line Automatic Sync (Recommended ⚡)
+Run this single command from your terminal:
+```bash
+dart run tool/sync_all_branches.dart "Your commit message"
+```
+*This command automatically commits your changes, merges into `main`, merges into all 4 brand branches (`brand/dakeventures`, `brand/idypay`, `brand/nmilleniumresource`, `brand/tincitybill`), pushes all of them to GitHub, and returns you to your current working branch.*
+
+---
+
+#### Option B: Manual Step-by-Step Git Commands
 ```bash
 # 1. Commit and push updates to main
 git checkout main
@@ -126,7 +136,7 @@ git add .
 git commit -m "Added new features to core app"
 git push origin main
 
-# 2. Merge main updates into the brand branch
+# 2. Merge main updates into each brand branch
 git checkout brand/dakeventures
 git merge main
 git push origin brand/dakeventures
