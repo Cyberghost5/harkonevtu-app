@@ -288,6 +288,7 @@ class SpecializedProvider extends ChangeNotifier {
           'proof': file,
           'image': file,
           'receipt': file,
+          'screenshot': file,
           if (pin != null && pin.isNotEmpty) 'pin': pin.trim(),
           if (pin != null && pin.isNotEmpty) 'transaction_pin': pin.trim(),
         });
@@ -299,6 +300,7 @@ class SpecializedProvider extends ChangeNotifier {
           if (reference != null && reference.isNotEmpty) 'reference': reference.trim(),
           if (proofPath != null && proofPath.isNotEmpty) 'proof_image': proofPath,
           if (proofPath != null && proofPath.isNotEmpty) 'proof': proofPath,
+          if (proofPath != null && proofPath.isNotEmpty) 'screenshot': proofPath,
           if (pin != null && pin.isNotEmpty) 'pin': pin.trim(),
           if (pin != null && pin.isNotEmpty) 'transaction_pin': pin.trim(),
         };
