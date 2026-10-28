@@ -22,6 +22,7 @@ import '../bills/exam_pins_screen.dart';
 import '../specialized/betting_topup_screen.dart';
 import '../specialized/airtime_to_cash_screen.dart';
 import '../specialized/voucher_printing_screen.dart';
+import '../specialized/bulk_sms_screen.dart';
 import '../profile/referrals_screen.dart';
 import '../wallet/wallet_view.dart';
 
@@ -688,6 +689,9 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
     if (services?.airtimeToCash ?? true) {
       actions.add({'key': 'airtimeToCash', 'title': 'Airtime to Cash', 'icon': Icons.currency_exchange_rounded, 'color': const Color(0xFF84CC16)});
     }
+    if (services?.bulkSms ?? true) {
+      actions.add({'key': 'bulkSms', 'title': 'Bulk SMS', 'icon': Icons.mark_chat_unread_rounded, 'color': const Color(0xFF3B82F6)});
+    }
     actions.add({'key': 'referrals', 'title': 'Refer & Earn', 'icon': Icons.card_giftcard_rounded, 'color': const Color(0xFFEAB308)});
 
     return GridView.builder(
@@ -732,6 +736,9 @@ class _HomeDashboardViewState extends State<HomeDashboardView> {
                 break;
               case 'rechargeCardPrinting':
                 targetScreen = const VoucherPrintingScreen();
+                break;
+              case 'bulkSms':
+                targetScreen = const BulkSmsScreen();
                 break;
               case 'referrals':
                 targetScreen = const ReferralsScreen();
