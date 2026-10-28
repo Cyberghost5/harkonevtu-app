@@ -376,10 +376,12 @@ class SpecializedProvider extends ChangeNotifier {
   // ─── Bulk SMS Messaging ───────────────────────────────────────────────────
   double _bulkSmsRate = 4.0;
   String _defaultSenderId = 'VTU';
+  String _defaultGateway = 'direct-corporate';
   bool _bulkSmsEnabled = true;
 
   double get bulkSmsRate => _bulkSmsRate;
   String get defaultSenderId => _defaultSenderId;
+  String get defaultGateway => _defaultGateway;
   bool get bulkSmsEnabled => _bulkSmsEnabled;
 
   Future<ApiResponse> fetchBulkSmsPricing() async {
@@ -389,6 +391,7 @@ class SpecializedProvider extends ChangeNotifier {
         final data = response.data as Map<String, dynamic>;
         _bulkSmsRate = (data['unit_rate'] as num?)?.toDouble() ?? 4.0;
         _defaultSenderId = data['default_sender_id']?.toString() ?? 'VTU';
+        _defaultGateway = data['default_gateway']?.toString() ?? 'direct-corporate';
         _bulkSmsEnabled = data['enabled'] == true;
         notifyListeners();
       }
@@ -419,6 +422,7 @@ class SpecializedProvider extends ChangeNotifier {
     required String message,
     required String recipients,
     required String pin,
+    String? gateway,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -428,6 +432,7 @@ class SpecializedProvider extends ChangeNotifier {
         'sender_id': senderId,
         'message': message,
         'recipients': recipients,
+        'gateway': gateway ?? _defaultGateway,
         'transaction_pin': pin,
       });
 
