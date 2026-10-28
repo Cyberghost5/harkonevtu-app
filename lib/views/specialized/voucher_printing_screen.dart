@@ -20,6 +20,8 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
   String _selectedNetwork = 'mtn';
   int _quantity = 1;
 
+  final List<int> _allowedDenominations = [100, 200, 500, 1000];
+
   final List<Map<String, dynamic>> _networks = [
     {'key': 'mtn', 'name': 'MTN', 'color': const Color(0xFFFACC15)},
     {'key': 'airtel', 'name': 'Airtel', 'color': const Color(0xFFEF4444)},
@@ -36,11 +38,12 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
   void _submitOrder() {
     final denomText = _denominationController.text.trim();
     final denom = double.tryParse(denomText) ?? 0.0;
+    final denomInt = denom.toInt();
 
-    if (denom < 100) {
+    if (!_allowedDenominations.contains(denomInt) || denom != denomInt.toDouble()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Minimum voucher denomination is ₦100.'),
+          content: Text('Please select a valid denomination: ₦100, ₦200, ₦500, or ₦1,000.'),
           backgroundColor: Color(0xFFEF4444),
         ),
       );
@@ -166,7 +169,7 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Denomination Input
+              // Denomination Selector & Input
               Text(
                 'Card Denomination (₦)',
                 style: TextStyle(
@@ -175,7 +178,55 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
+
+              // Quick-Select Denomination Chips
+              Row(
+                children: _allowedDenominations.map((d) {
+                  final isSelected = _denominationController.text.trim() == d.toString();
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _denominationController.text = d.toString();
+                          });
+                        },
+                        child: ClayContainer(
+                          depth: isSelected ? 10 : 4,
+                          cornerRadius: 12,
+                          color: isSelected
+                              ? primaryColor.withValues(alpha: 0.2)
+                              : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected ? primaryColor : Colors.transparent,
+                                width: isSelected ? 1.5 : 0,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '₦$d',
+                                style: TextStyle(
+                                  color: isSelected ? primaryColor : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 12),
+
               ClayTextField(
                 controller: _denominationController,
                 keyboardType: TextInputType.number,
