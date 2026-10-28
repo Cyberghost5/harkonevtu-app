@@ -9,6 +9,7 @@ import '../bills/exam_pins_screen.dart';
 import '../specialized/betting_topup_screen.dart';
 import '../specialized/airtime_to_cash_screen.dart';
 import '../specialized/voucher_printing_screen.dart';
+import '../specialized/bulk_sms_screen.dart';
 import '../widgets/clay_container.dart';
 
 class ServicesGridView extends StatelessWidget {
@@ -83,6 +84,14 @@ class ServicesGridView extends StatelessWidget {
         'icon': Icons.currency_exchange_rounded,
         'color': const Color(0xFF84CC16),
         'enabled': services?.airtimeToCash ?? true,
+      },
+      {
+        'key': 'bulk_sms',
+        'title': 'Bulk SMS Messaging',
+        'desc': 'Broadcast SMS to thousands with custom alphanumeric Sender ID',
+        'icon': Icons.mark_chat_unread_rounded,
+        'color': const Color(0xFF3B82F6),
+        'enabled': services?.bulkSms ?? true,
       },
     ];
 
@@ -176,6 +185,11 @@ class ServicesGridView extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const VoucherPrintingScreen()),
+                        );
+                      } else if (key == 'bulk_sms') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const BulkSmsScreen()),
                         );
                       }
                     },
