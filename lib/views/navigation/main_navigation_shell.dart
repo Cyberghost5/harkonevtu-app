@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../auth/complete_profile_screen.dart';
 import '../home/home_dashboard_view.dart';
 import '../services/services_grid_view.dart';
 import '../wallet/wallet_view.dart';
@@ -25,18 +24,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (authProvider.isAuthenticated && !authProvider.isProfileComplete) {
-        widget.onNavigate(
-          CompleteProfileScreen(
-            onNavigate: widget.onNavigate,
-            onCompleteSuccess: () {},
-          ),
-        );
-      }
-    });
   }
 
   final List<Map<String, dynamic>> _navItems = const [

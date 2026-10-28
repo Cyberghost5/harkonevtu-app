@@ -10,7 +10,6 @@ import 'maintenance_screen.dart';
 import 'force_update_screen.dart';
 import 'onboarding_screen.dart';
 import 'auth/login_screen.dart';
-import 'auth/complete_profile_screen.dart';
 import 'offline_screen.dart';
 
 import 'navigation/main_navigation_shell.dart';
@@ -89,20 +88,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void _navigateToAuthOrMain(String? token) {
     if (token != null && token.isNotEmpty) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (!authProvider.isProfileComplete) {
-        widget.onNavigate(
-          CompleteProfileScreen(
-            onNavigate: widget.onNavigate,
-            onCompleteSuccess: () {
-              widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
-            },
-          ),
-        );
-      } else {
-        // Valid session & Complete Profile -> Main App Shell
-        widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
-      }
+      // Valid session -> Main App Shell directly
+      widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
     } else {
       // No token -> Login Screen
       widget.onNavigate(
