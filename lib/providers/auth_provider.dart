@@ -285,8 +285,10 @@ class AuthProvider extends ChangeNotifier {
       final response = await _apiClient.post('/auth/google', data: payload);
 
       if (response.status) {
+        bool isNewUser = false;
         if (response.data != null && response.data is Map<String, dynamic>) {
           final resData = response.data as Map<String, dynamic>;
+          isNewUser = (resData['is_new_user'] == true);
           final token = resData['token'] ?? resData['access_token'] ?? resData['user']?['token'];
           if (token != null && token.toString().isNotEmpty) {
             _token = token.toString();
@@ -314,7 +316,6 @@ class AuthProvider extends ChangeNotifier {
           }
         }
 
-        final isNewUser = (resData['is_new_user'] == true);
         _isLoading = false;
         notifyListeners();
         return LoginResult(
