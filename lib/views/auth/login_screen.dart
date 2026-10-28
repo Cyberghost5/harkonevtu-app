@@ -79,7 +79,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           backgroundColor: Color(0xFF10B981),
         ),
       );
-      _navigatePostAuth();
+      if (result.isNewUser && !authProvider.isProfileComplete) {
+        widget.onNavigate(
+          CompleteProfileScreen(
+            onNavigate: widget.onNavigate,
+            onCompleteSuccess: widget.onLoginSuccess,
+          ),
+        );
+      } else {
+        _navigatePostAuth();
+      }
     } else if (result.requiresVerification) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -115,24 +124,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   void _navigatePostAuth() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
 
     await dashboardProvider.fetchDashboardData();
     if (!mounted) return;
 
-    if (!authProvider.isProfileComplete) {
-      widget.onNavigate(
-        CompleteProfileScreen(
-          onNavigate: widget.onNavigate,
-          onCompleteSuccess: widget.onLoginSuccess,
-        ),
-      );
-    } else {
-      widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
-      if (widget.onLoginSuccess != null) {
-        widget.onLoginSuccess!();
-      }
+    widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
+    if (widget.onLoginSuccess != null) {
+      widget.onLoginSuccess!();
     }
   }
 
@@ -172,7 +171,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           backgroundColor: Color(0xFF10B981),
         ),
       );
-      _navigatePostAuth();
+      if (result.isNewUser && !authProvider.isProfileComplete) {
+        widget.onNavigate(
+          CompleteProfileScreen(
+            onNavigate: widget.onNavigate,
+            onCompleteSuccess: widget.onLoginSuccess,
+          ),
+        );
+      } else {
+        _navigatePostAuth();
+      }
     } else if (result.message != 'Google Sign-In cancelled.') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
