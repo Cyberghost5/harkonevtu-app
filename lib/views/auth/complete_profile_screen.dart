@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../core/storage/secure_storage_service.dart';
 import '../../providers/dashboard_provider.dart';
 import '../navigation/main_navigation_shell.dart';
 import 'login_screen.dart';
@@ -49,6 +50,42 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     _pinController.dispose();
     _confirmPinController.dispose();
     super.dispose();
+  }
+
+  void _skipToDashboard() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    final user = authProvider.user;
+
+    if (user != null) {
+      await SecureStorageService().setPromptedRegistrationSetup(user.id);
+    }
+
+    await dashboardProvider.fetchDashboardData();
+    if (!mounted) return;
+
+    final Function(Widget) navigateCallback = widget.onNavigate ??
+        (screen) {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => screen),
+            );
+          }
+        };
+
+    if (widget.onNavigate != null) {
+      widget.onNavigate!(MainNavigationShell(onNavigate: navigateCallback));
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => MainNavigationShell(onNavigate: navigateCallback),
+        ),
+      );
+    }
+
+    if (widget.onCompleteSuccess != null) {
+      widget.onCompleteSuccess!();
+    }
   }
 
   void _handleSubmit() async {
@@ -115,6 +152,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     if (!mounted) return;
 
     if (response.status) {
+      final user = authProvider.user;
+      if (user != null) {
+        await SecureStorageService().setPromptedRegistrationSetup(user.id);
+      }
       HapticFeedback.mediumImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -182,17 +223,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     final needsPin = user == null || user.needsPin;
 
     return PopScope(
-      canPop: false,
+      canPop: true,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please create your 4-digit transaction PIN to continue.'),
-            backgroundColor: Color(0xFFF59E0B),
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        _skipToDashboard();
       },
       child: Scaffold(
         backgroundColor: bgColor,
@@ -204,6 +238,19 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           centerTitle: true,
           automaticallyImplyLeading: false,
           elevation: 0,
+          actions: [
+            TextButton(
+              onPressed: _skipToDashboard,
+              child: Text(
+                'Skip',
+                style: TextStyle(
+                  color: primaryColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -473,6 +520,21 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   const SizedBox(height: 16),
 
                   // Safe Logout Option (to exit without bypassing PIN)
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: _skipToDashboard,
+                      icon: Icon(Icons.arrow_forward_rounded, size: 16, color: primaryColor),
+                      label: Text(
+                        'Skip for now, go to Dashboard',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Center(
                     child: TextButton.icon(
                       onPressed: () async {
