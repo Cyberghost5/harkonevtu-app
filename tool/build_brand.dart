@@ -220,7 +220,7 @@ storeFile=upload-keystore.jks
   // Search for any .jks files in brandDir
   final jksFiles = brandDir.listSync().whereType<File>().where((f) => f.path.endsWith('.jks') || f.path.endsWith('.keystore'));
   for (final jks in jksFiles) {
-    final fileName = jks.path.split(Platform.pathSeparator).last;
+    final fileName = jks.uri.pathSegments.last;
     final targetJks = File('android/app/$fileName');
     print('🔐 Copying unique brand keystore [${jks.path}] -> [${targetJks.path}]');
     if (!isDryRun) jks.copySync(targetJks.path);
@@ -245,6 +245,27 @@ storeFile=upload-keystore.jks
 
   // 10. Optional Release Build (APK + AAB)
   if (shouldBuild && !isDryRun) {
+    // Re-verify that the active brand keystore & key.properties are strictly in place before building
+    if (customKeyProp.existsSync()) customKeyProp.copySync(targetKeyProp.path);
+    for (final jks in jksFiles) {
+      final fileName = jks.uri.pathSegments.last;
+      jks.copySync('android/app/$fileName');
+    }
+
+    // Clean previous outputs so an old build can never be mistakenly copied
+    final apkSource = File('build/app/outputs/flutter-apk/app-release.apk');
+    if (apkSource.existsSync()) {
+      try {
+        apkSource.deleteSync();
+      } catch (_) {}
+    }
+    final aabSource = File('build/app/outputs/bundle/release/app-release.aab');
+    if (aabSource.existsSync()) {
+      try {
+        aabSource.deleteSync();
+      } catch (_) {}
+    }
+
     final distDir = Directory('dist/$brandId');
     distDir.createSync(recursive: true);
 
@@ -252,13 +273,12 @@ storeFile=upload-keystore.jks
     final buildApkRes = await Process.run('flutter', ['build', 'apk', '--release']);
     print(buildApkRes.stdout);
 
-    if (buildApkRes.exitCode == 0) {
-      final apkSource = File('build/app/outputs/flutter-apk/app-release.apk');
-      if (apkSource.existsSync()) {
-        final distApk = File('${distDir.path}/app-release.apk');
-        apkSource.copySync(distApk.path);
-        print('✅ Compiled APK saved to: ${distApk.path}');
-      }
+    if (buildApkRes.exitCode == 0 && apkSource.existsSync()) {
+      final distApk = File('${distDir.path}/app-release.apk');
+      final brandedApk = File('${distDir.path}/$brandId-release.apk');
+      apkSource.copySync(distApk.path);
+      apkSource.copySync(brandedApk.path);
+      print('✅ Compiled APK saved to: ${distApk.path}');
     } else {
       print('❌ APK Build failed: ${buildApkRes.stderr}');
     }
@@ -267,13 +287,16 @@ storeFile=upload-keystore.jks
     final buildAabRes = await Process.run('flutter', ['build', 'appbundle', '--release']);
     print(buildAabRes.stdout);
 
-    if (buildAabRes.exitCode == 0) {
-      final aabSource = File('build/app/outputs/bundle/release/app-release.aab');
-      if (aabSource.existsSync()) {
-        final distAab = File('${distDir.path}/app-release.aab');
-        aabSource.copySync(distAab.path);
-        print('✅ Compiled AAB saved to: ${distAab.path}');
-      }
+    if (buildAabRes.exitCode == 0 && aabSource.existsSync()) {
+      final distAab = File('${distDir.path}/app-release.aab');
+      final brandedAab = File('${distDir.path}/$brandId-release.aab');
+      aabSource.copySync(distAab.path);
+      aabSource.copySync(brandedAab.path);
+      print('\n======================================================================');
+      print('✅ COMPILED AAB FOR PLAY STORE SAVED:');
+      print('   Brand: $appName ($packageName)');
+      print('   File:  ${brandedAab.path}');
+      print('======================================================================\n');
     } else {
       print('❌ AAB Build failed: ${buildAabRes.stderr}');
     }
