@@ -141,7 +141,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await dashboardProvider.fetchDashboardData();
       if (!mounted) return;
 
-      if (!authProvider.isProfileComplete) {
+      if (result.isNewUser && !authProvider.isProfileComplete) {
         widget.onNavigate(
           CompleteProfileScreen(
             onNavigate: widget.onNavigate,

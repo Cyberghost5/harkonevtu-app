@@ -150,6 +150,20 @@ class SecureStorageService {
     return [];
   }
 
+  // Registration Setup Tracking
+  static const String _keyRegistrationSetupPrompted = 'registration_setup_prompted_';
+
+  Future<bool> hasPromptedRegistrationSetup(dynamic userId) async {
+    if (userId == null) return false;
+    final val = await _storage.read(key: '$_keyRegistrationSetupPrompted$userId');
+    return val == 'true';
+  }
+
+  Future<void> setPromptedRegistrationSetup(dynamic userId) async {
+    if (userId == null) return;
+    await _storage.write(key: '$_keyRegistrationSetupPrompted$userId', value: 'true');
+  }
+
   // Clear Session
   Future<void> clearSession() async {
     await deleteToken();

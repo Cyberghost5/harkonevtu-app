@@ -11,12 +11,14 @@ import '../models/user_model.dart';
 class LoginResult {
   final bool success;
   final bool requiresVerification;
+  final bool isNewUser;
   final String? email;
   final String message;
 
   LoginResult({
     required this.success,
     this.requiresVerification = false,
+    this.isNewUser = false,
     this.email,
     required this.message,
   });
@@ -312,10 +314,12 @@ class AuthProvider extends ChangeNotifier {
           }
         }
 
+        final isNewUser = (resData['is_new_user'] == true);
         _isLoading = false;
         notifyListeners();
         return LoginResult(
           success: true,
+          isNewUser: isNewUser,
           message: response.message.isNotEmpty
               ? response.message
               : 'Google authentication successful.',
