@@ -372,4 +372,81 @@ class SpecializedProvider extends ChangeNotifier {
       return ApiResponse(status: false, message: 'Voucher generation failed.');
     }
   }
+
+  // ─── Bulk SMS Messaging ───────────────────────────────────────────────────
+  double _bulkSmsRate = 4.0;
+  String _defaultSenderId = 'VTU';
+  bool _bulkSmsEnabled = true;
+
+  double get bulkSmsRate => _bulkSmsRate;
+  String get defaultSenderId => _defaultSenderId;
+  bool get bulkSmsEnabled => _bulkSmsEnabled;
+
+  Future<ApiResponse> fetchBulkSmsPricing() async {
+    try {
+      final response = await _apiClient.get('/bulksms/pricing');
+      if (response.status && response.data != null && response.data is Map<String, dynamic>) {
+        final data = response.data as Map<String, dynamic>;
+        _bulkSmsRate = (data['unit_rate'] as num?)?.toDouble() ?? 4.0;
+        _defaultSenderId = data['default_sender_id']?.toString() ?? 'VTU';
+        _bulkSmsEnabled = data['enabled'] == true;
+        notifyListeners();
+      }
+      return response;
+    } catch (e) {
+      debugPrint('Error fetching bulk sms pricing: $e');
+      return ApiResponse(status: false, message: 'Could not fetch Bulk SMS pricing.');
+    }
+  }
+
+  Future<ApiResponse> previewBulkSms({
+    required String message,
+    required String recipients,
+  }) async {
+    try {
+      return await _apiClient.post('/bulksms/preview', data: {
+        'message': message,
+        'recipients': recipients,
+      });
+    } catch (e) {
+      debugPrint('Error previewing bulk sms: $e');
+      return ApiResponse(status: false, message: 'Failed to preview campaign.');
+    }
+  }
+
+  Future<ApiResponse> sendBulkSms({
+    required String senderId,
+    required String message,
+    required String recipients,
+    required String pin,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.post('/bulksms/send', data: {
+        'sender_id': senderId,
+        'message': message,
+        'recipients': recipients,
+        'transaction_pin': pin,
+      });
+
+      _isLoading = false;
+      notifyListeners();
+      return response;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return ApiResponse(status: false, message: 'Bulk SMS dispatch failed.');
+    }
+  }
+
+  Future<ApiResponse> fetchBulkSmsHistory({int page = 1}) async {
+    try {
+      return await _apiClient.get('/bulksms/history', queryParameters: {'page': page});
+    } catch (e) {
+      debugPrint('Error fetching bulk sms history: $e');
+      return ApiResponse(status: false, message: 'Failed to load campaign history.');
+    }
+  }
 }

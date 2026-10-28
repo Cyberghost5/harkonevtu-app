@@ -85,6 +85,7 @@ class AppServicesModel {
   final bool betting;
   final bool airtimeToCash;
   final bool rechargeCardPrinting;
+  final bool bulkSms;
   final bool cardPayment;
   final bool autoBankTransfer;
   final bool manualBankTransfer;
@@ -99,6 +100,7 @@ class AppServicesModel {
     this.betting = true,
     this.airtimeToCash = true,
     this.rechargeCardPrinting = false,
+    this.bulkSms = true,
     this.cardPayment = true,
     this.autoBankTransfer = true,
     this.manualBankTransfer = true,
@@ -115,6 +117,7 @@ class AppServicesModel {
       betting: json['betting'] ?? true,
       airtimeToCash: json['airtime_to_cash'] ?? true,
       rechargeCardPrinting: json['recharge_card_printing'] ?? false,
+      bulkSms: json['bulk_sms'] ?? json['bulksms'] ?? true,
       cardPayment: json['card_payment'] ?? true,
       autoBankTransfer: json['auto_bank_transfer'] ?? true,
       manualBankTransfer: json['manual_bank_transfer'] ?? true,
