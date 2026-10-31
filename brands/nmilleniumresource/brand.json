@@ -4,7 +4,8 @@
   "package_name": "com.harkonedesigns.nmilleniumresource",
   "base_url": "https://nmilleniumresource.com.ng/api/v1",
   "git_branch": "brand/nmilleniumresource",
-  "key_alias": "nmilleniumresource",
-  "store_password": "nmilleniumresource",
-  "key_password": "nmilleniumresource"
+  "google_server_client_id": "686309797782-j1176klhi6r422jgcoe4p6mjf2teef1c.apps.googleusercontent.com",
+  "key_alias": "tincitybill",
+  "store_password": "tincitybill",
+  "key_password": "tincitybill"
 }
