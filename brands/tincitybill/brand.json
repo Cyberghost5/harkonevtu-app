@@ -4,6 +4,7 @@
   "package_name": "com.harkonedesigns.tincitybill",
   "base_url": "https://tincitybill.com/api/v1",
   "git_branch": "brand/tincitybill",
+  "google_server_client_id": "551390537530-56gnh69bubag54cg6s35c5tqir4nvpho.apps.googleusercontent.com",
   "key_alias": "tincitybill",
   "store_password": "tincitybill",
   "key_password": "tincitybill"

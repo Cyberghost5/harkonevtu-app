@@ -63,7 +63,27 @@ void main(List<String> args) async {
   }
 
   // 3. Update ApiConstants.baseUrl & googleServerClientId
-  final googleServerClientId = (configJson['google_server_client_id'] as String?) ?? '';
+  var googleServerClientId = (configJson['google_server_client_id'] as String?) ?? '';
+  if (googleServerClientId.trim().isEmpty) {
+    final googleServicesFile = File('${brandDir.path}/google-services.json');
+    if (googleServicesFile.existsSync()) {
+      try {
+        final gs = jsonDecode(googleServicesFile.readAsStringSync());
+        final clients = gs['client'] as List<dynamic>?;
+        if (clients != null && clients.isNotEmpty) {
+          final oauthList = clients.first['oauth_client'] as List<dynamic>?;
+          if (oauthList != null) {
+            for (final oc in oauthList) {
+              if (oc['client_type'] == 3 && oc['client_id'] != null) {
+                googleServerClientId = oc['client_id'].toString().trim();
+                break;
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+  }
   final apiConstantsFile = File('lib/core/api/api_constants.dart');
   if (apiConstantsFile.existsSync()) {
     print('\n🌐 Updating API Base URL and Google Client ID in lib/core/api/api_constants.dart');
