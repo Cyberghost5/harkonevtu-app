@@ -4,6 +4,7 @@
   "package_name": "com.harkonedesigns.idypay",
   "base_url": "https://idypay.com.ng/api/v1",
   "git_branch": "brand/idypay",
+  "google_server_client_id": "62911045279-eoc6g6ck4qufdr1jqlvjhjbngk0rnpmt.apps.googleusercontent.com",
   "key_alias": "idypay",
   "store_password": "idypay",
   "key_password": "idypay"
