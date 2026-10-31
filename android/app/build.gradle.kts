@@ -1,12 +1,6 @@
 import java.io.FileInputStream
 import java.util.Properties
 
-val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-}
-
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -42,22 +36,49 @@ android {
 
     signingConfigs {
         create("release") {
-            if (keystorePropertiesFile.exists()) {
+            // Dynamically resolve brand-specific signing credentials from tracked brands/<brand>/ directory
+            val brandName = defaultConfig.applicationId?.substringAfterLast('.') ?: ""
+            val brandDir = rootProject.file("../brands/$brandName")
+            val brandKeyProp = File(brandDir, "key.properties")
+            val rootKeyProp = rootProject.file("key.properties")
+
+            val activePropFile = if (brandKeyProp.exists()) {
+                brandKeyProp
+            } else if (rootKeyProp.exists()) {
+                rootKeyProp
+            } else {
+                null
+            }
+
+            if (activePropFile != null && activePropFile.exists()) {
+                val keystoreProperties = Properties()
+                keystoreProperties.load(FileInputStream(activePropFile))
+
                 keyAlias = keystoreProperties["keyAlias"] as String?
                 keyPassword = keystoreProperties["keyPassword"] as String?
-                storeFile = keystoreProperties["storeFile"]?.let { file(it) } ?: file("upload-keystore.jks")
                 storePassword = keystoreProperties["storePassword"] as String?
+
+                val brandStoreFile = File(brandDir, "upload-keystore.jks")
+                if (brandStoreFile.exists()) {
+                    storeFile = brandStoreFile
+                } else if (keystoreProperties["storeFile"] != null) {
+                    val customStore = File(activePropFile.parentFile, keystoreProperties["storeFile"] as String)
+                    storeFile = if (customStore.exists()) customStore else file(keystoreProperties["storeFile"] as String)
+                } else {
+                    storeFile = file("upload-keystore.jks")
+                }
             }
         }
     }
 
     buildTypes {
         release {
-            if (keystorePropertiesFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
+            val releaseConfig = signingConfigs.getByName("release")
+            if (releaseConfig.storeFile?.exists() == true) {
+                signingConfig = releaseConfig
             } else {
-                throw GradleException("Release Build Failed: android/key.properties was not found. Release builds must be signed with a valid release keystore.")
-
+                val brandName = defaultConfig.applicationId?.substringAfterLast('.') ?: ""
+                throw GradleException("Release Build Failed: No valid release keystore found for brand '$brandName'. Checked brands/$brandName/upload-keystore.jks and android/key.properties.")
             }
         }
     }
