@@ -7,6 +7,7 @@ import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
 import '../widgets/clay_text_field.dart';
 import '../transaction_status_screen.dart';
+import 'voucher_history_screen.dart';
 
 class VoucherPrintingScreen extends StatefulWidget {
   const VoucherPrintingScreen({super.key});
@@ -104,6 +105,18 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Recharge Card Printing'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.receipt_long_rounded),
+            tooltip: 'My Vouchers',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const VoucherHistoryScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -322,6 +335,36 @@ class _VoucherPrintingScreenState extends State<VoucherPrintingScreen> {
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // View Purchased Vouchers & Download PDF
+              ClayButton(
+                height: 50,
+                depth: 6,
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                textColor: primaryColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const VoucherHistoryScreen()),
+                  );
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.receipt_long_rounded, size: 18, color: primaryColor),
+                    const SizedBox(width: 8),
+                    Text(
+                      'View Purchased Vouchers & PDF',
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
