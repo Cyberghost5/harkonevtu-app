@@ -13,6 +13,8 @@ import '../models/transaction_model.dart';
 import 'widgets/clay_container.dart';
 import 'widgets/clay_button.dart';
 import 'widgets/receipt_modal.dart';
+import 'specialized/voucher_history_screen.dart';
+import 'bills/exam_pins_history_screen.dart';
 
 enum TransactionScreenState {
   processing,
@@ -491,9 +493,54 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen>
 
           // Action Buttons
           if (isSuccess) ...[
+            if (widget.serviceType.toLowerCase().contains('voucher') ||
+                widget.title.toLowerCase().contains('voucher')) ...[
+              ClayButton(
+                text: 'View & Download Vouchers (PDF)',
+                icon: Icons.confirmation_number_rounded,
+                color: primaryColor,
+                textColor: Colors.white,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const VoucherHistoryScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: 14),
+            ],
+            if (widget.serviceType.toLowerCase().contains('exam') ||
+                widget.title.toLowerCase().contains('exam') ||
+                widget.serviceType.toLowerCase().contains('epin')) ...[
+              ClayButton(
+                text: 'View & Download Exam PINs (PDF)',
+                icon: Icons.history_edu_rounded,
+                color: primaryColor,
+                textColor: Colors.white,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ExamPinsHistoryScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: 14),
+            ],
             ClayButton(
               text: 'Done & Return Home',
               icon: Icons.home_rounded,
+              color: (widget.serviceType.toLowerCase().contains('voucher') ||
+                      widget.title.toLowerCase().contains('voucher') ||
+                      widget.serviceType.toLowerCase().contains('exam') ||
+                      widget.title.toLowerCase().contains('exam'))
+                  ? (isDark ? const Color(0xFF1E293B) : Colors.white)
+                  : primaryColor,
+              textColor: (widget.serviceType.toLowerCase().contains('voucher') ||
+                      widget.title.toLowerCase().contains('voucher') ||
+                      widget.serviceType.toLowerCase().contains('exam') ||
+                      widget.title.toLowerCase().contains('exam'))
+                  ? titleCol
+                  : Colors.white,
               onPressed: () {
                 Navigator.of(context).popUntil((route) => route.isFirst);
               },
