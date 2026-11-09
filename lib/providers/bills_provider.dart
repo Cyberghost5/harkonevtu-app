@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api/api_client.dart';
+import '../core/api/api_constants.dart';
+import '../core/storage/secure_storage_service.dart';
 import '../models/disco_model.dart';
 
 class BillsProvider extends ChangeNotifier {
@@ -563,5 +565,75 @@ class BillsProvider extends ChangeNotifier {
       notifyListeners();
       return ApiResponse(status: false, message: 'Exam PIN purchase failed.');
     }
+  }
+
+  // ─── Exam PIN History & Vault ─────────────────────────────────────────────
+  List<Map<String, dynamic>> _examPinTransactions = [];
+  bool _isLoadingExamHistory = false;
+  int _examHistoryTotal = 0;
+  String? _examHistoryError;
+
+  List<Map<String, dynamic>> get examPinTransactions => _examPinTransactions;
+  bool get isLoadingExamHistory => _isLoadingExamHistory;
+  int get examHistoryTotal => _examHistoryTotal;
+  String? get examHistoryError => _examHistoryError;
+
+  Future<void> fetchExamPinHistory({
+    int page = 1,
+    String? examType,
+    String? status,
+    int perPage = 30,
+  }) async {
+    _isLoadingExamHistory = true;
+    _examHistoryError = null;
+    notifyListeners();
+
+    try {
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'per_page': perPage,
+        if (examType != null && examType.isNotEmpty && examType.toLowerCase() != 'all')
+          'exam_type': examType.toLowerCase(),
+        if (status != null && status.isNotEmpty && status.toLowerCase() != 'all')
+          'status': status.toLowerCase(),
+      };
+
+      var response = await _apiClient.get('/bills/exam-pins/history', queryParameters: queryParams);
+      if (!response.status) {
+        response = await _apiClient.get('/exam-pins/history', queryParameters: queryParams);
+      }
+
+      if (response.status && response.data != null) {
+        if (response.data is Map<String, dynamic>) {
+          final map = response.data as Map<String, dynamic>;
+          final list = (map['transactions'] ?? map['items'] ?? map['history']) as List<dynamic>? ?? [];
+          _examPinTransactions = list.map((item) => Map<String, dynamic>.from(item as Map)).toList();
+          _examHistoryTotal = int.tryParse(map['total']?.toString() ?? '') ?? _examPinTransactions.length;
+        } else if (response.data is List) {
+          _examPinTransactions = (response.data as List<dynamic>).map((item) => Map<String, dynamic>.from(item as Map)).toList();
+          _examHistoryTotal = _examPinTransactions.length;
+        }
+      } else {
+        _examHistoryError = response.message;
+      }
+    } catch (e) {
+      _examHistoryError = 'Failed to load exam PIN history.';
+    } finally {
+      _isLoadingExamHistory = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String> getExamPinPdfUrl({List<int>? ids}) async {
+    final token = await SecureStorageService().getToken() ?? '';
+    final query = <String>[];
+    if (token.isNotEmpty) {
+      query.add('token=${Uri.encodeComponent(token)}');
+    }
+    if (ids != null && ids.isNotEmpty) {
+      query.add('ids=${ids.join(',')}');
+    }
+    final queryString = query.isNotEmpty ? '?${query.join('&')}' : '';
+    return '${ApiConstants.baseUrl}/exam-pins/download-pdf$queryString';
   }
 }

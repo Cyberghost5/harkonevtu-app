@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../core/api/api_client.dart';
+import '../core/api/api_constants.dart';
+import '../core/storage/secure_storage_service.dart';
 
 class SpecializedProvider extends ChangeNotifier {
   final ApiClient _apiClient = ApiClient();
@@ -371,6 +373,76 @@ class SpecializedProvider extends ChangeNotifier {
       notifyListeners();
       return ApiResponse(status: false, message: 'Voucher generation failed.');
     }
+  }
+
+  // ─── Purchased Vouchers Vault & History ────────────────────────────────────
+  List<Map<String, dynamic>> _vouchers = [];
+  bool _isLoadingVouchers = false;
+  int _voucherTotal = 0;
+  String? _voucherError;
+
+  List<Map<String, dynamic>> get vouchers => _vouchers;
+  bool get isLoadingVouchers => _isLoadingVouchers;
+  int get voucherTotal => _voucherTotal;
+  String? get voucherError => _voucherError;
+
+  Future<void> fetchVoucherHistory({
+    int page = 1,
+    String? network,
+    String? status,
+    String? type,
+    int perPage = 50,
+  }) async {
+    _isLoadingVouchers = true;
+    _voucherError = null;
+    notifyListeners();
+
+    try {
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'per_page': perPage,
+        if (network != null && network.isNotEmpty && network.toLowerCase() != 'all')
+          'network': network.toLowerCase(),
+        if (status != null && status.isNotEmpty && status.toLowerCase() != 'all')
+          'status': status.toLowerCase(),
+        if (type != null && type.isNotEmpty && type.toLowerCase() != 'all')
+          'type': type.toLowerCase(),
+      };
+
+      final response = await _apiClient.get('/vouchers/history', queryParameters: queryParams);
+
+      if (response.status && response.data != null) {
+        if (response.data is Map<String, dynamic>) {
+          final map = response.data as Map<String, dynamic>;
+          final list = map['vouchers'] as List<dynamic>? ?? [];
+          _vouchers = list.map((item) => Map<String, dynamic>.from(item as Map)).toList();
+          _voucherTotal = int.tryParse(map['total']?.toString() ?? '') ?? _vouchers.length;
+        } else if (response.data is List) {
+          _vouchers = (response.data as List<dynamic>).map((item) => Map<String, dynamic>.from(item as Map)).toList();
+          _voucherTotal = _vouchers.length;
+        }
+      } else {
+        _voucherError = response.message;
+      }
+    } catch (e) {
+      _voucherError = 'Failed to load voucher history.';
+    } finally {
+      _isLoadingVouchers = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String> getVoucherPdfUrl({List<int>? ids}) async {
+    final token = await SecureStorageService().getToken() ?? '';
+    final query = <String>[];
+    if (token.isNotEmpty) {
+      query.add('token=${Uri.encodeComponent(token)}');
+    }
+    if (ids != null && ids.isNotEmpty) {
+      query.add('ids=${ids.join(',')}');
+    }
+    final queryString = query.isNotEmpty ? '?${query.join('&')}' : '';
+    return '${ApiConstants.baseUrl}/vouchers/download-pdf$queryString';
   }
 
   // ─── Bulk SMS Messaging ───────────────────────────────────────────────────

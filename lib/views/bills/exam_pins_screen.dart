@@ -9,6 +9,7 @@ import '../widgets/clay_container.dart';
 import '../widgets/clay_button.dart';
 import '../widgets/clay_text_field.dart';
 import '../transaction_status_screen.dart';
+import 'exam_pins_history_screen.dart';
 
 class ExamPinsScreen extends StatefulWidget {
   const ExamPinsScreen({super.key});
@@ -178,6 +179,18 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Exam Result PINs'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history_edu_rounded),
+            tooltip: 'My Exam PINs',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ExamPinsHistoryScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -347,6 +360,36 @@ class _ExamPinsScreenState extends State<ExamPinsScreen> {
                 icon: Icons.school_rounded,
                 isLoading: billsProvider.isLoading,
                 onPressed: billsProvider.isLoading ? null : _submitOrder,
+              ),
+              const SizedBox(height: 14),
+
+              // View Purchased Exam PINs & Download PDF
+              ClayButton(
+                height: 50,
+                depth: 6,
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                textColor: primaryColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ExamPinsHistoryScreen()),
+                  );
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.history_edu_rounded, size: 18, color: primaryColor),
+                    const SizedBox(width: 8),
+                    Text(
+                      'View Purchased Exam PINs & PDF',
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
