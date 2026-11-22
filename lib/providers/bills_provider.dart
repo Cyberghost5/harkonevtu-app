@@ -546,14 +546,13 @@ class BillsProvider extends ChangeNotifier {
         'transaction_pin': pin,
       };
 
+      bool isRouteNotFound(ApiResponse res) {
+        final m = res.message.toLowerCase();
+        return m.contains('could not be found') || m.contains('not found') || m.contains('404');
+      }
+
       var response = await _apiClient.post('/bills/exam-pins/purchase', data: payload);
-      if (!response.status) {
-        response = await _apiClient.post('/bills/exam-pins/buy', data: payload);
-      }
-      if (!response.status) {
-        response = await _apiClient.post('/bills/exam-pins', data: payload);
-      }
-      if (!response.status) {
+      if (!response.status && isRouteNotFound(response)) {
         response = await _apiClient.post('/exam-pins/purchase', data: payload);
       }
 
