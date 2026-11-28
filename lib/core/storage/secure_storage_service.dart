@@ -173,6 +173,11 @@ class SecureStorageService {
     await setBiometricsEnabled(false);
   }
 
+  /// Clears active session token on inactivity timeout while preserving biometric credentials
+  Future<void> expireSession() async {
+    await deleteToken();
+  }
+
   Future<void> clearAll() async {
     await _storage.deleteAll();
   }
