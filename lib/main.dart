@@ -149,12 +149,14 @@ class _SessionInactivityTrackerState extends State<SessionInactivityTracker> wit
 
     if (elapsed >= timeoutMinutes) {
       _lastActivity = DateTime.now();
+      final userEmail = auth.user?.email;
       await auth.handleSessionTimeout();
 
       if (!mounted) return;
 
       widget.onNavigate(
         LoginScreen(
+          initialEmail: userEmail,
           onNavigate: widget.onNavigate,
           onLoginSuccess: () {
             widget.onNavigate(MainNavigationShell(onNavigate: widget.onNavigate));
