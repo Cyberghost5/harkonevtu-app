@@ -1025,4 +1025,11 @@ class AuthProvider extends ChangeNotifier {
     await _storage.clearSession();
     notifyListeners();
   }
+
+  /// Closes session when idle timeout expires without clearing biometric credentials
+  Future<void> handleSessionTimeout() async {
+    _token = null;
+    await _storage.expireSession();
+    notifyListeners();
+  }
 }

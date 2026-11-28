@@ -32,6 +32,7 @@ class AppConfigProvider extends ChangeNotifier {
   String get serverMinVersion => _config?.minVersion ?? '1.0.0';
   double get agentUpgradeFee => _config?.agentUpgradeFee ?? 2500.0;
   double get kycFee => _config?.kycFee ?? 0.0;
+  int get sessionIdleTimeout => _config?.sessionIdleTimeout ?? 5;
 
   AppConfigProvider() {
     _loadThemeMode();

@@ -151,6 +151,7 @@ class AppConfigModel {
   final String googleClientId;
   final double agentUpgradeFee;
   final double kycFee;
+  final int sessionIdleTimeout;
 
   AppConfigModel({
     required this.appName,
@@ -177,6 +178,7 @@ class AppConfigModel {
     this.googleClientId = '',
     this.agentUpgradeFee = 2500.0,
     this.kycFee = 0.0,
+    this.sessionIdleTimeout = 5,
   });
 
   factory AppConfigModel.fromJson(Map<String, dynamic> json) {
@@ -221,6 +223,15 @@ class AppConfigModel {
       return 0.0;
     }
 
+    int resolveIdleTimeout() {
+      final v = json['session_idle_timeout'] ?? (json['security'] is Map ? json['security']['session_idle_timeout'] : null);
+      if (v != null) {
+        final parsed = int.tryParse(v.toString());
+        if (parsed != null && parsed > 0) return parsed;
+      }
+      return 5;
+    }
+
     return AppConfigModel(
       appName: json['app_name'] ?? 'Harkone VTU',
       siteName: json['site_name'] ?? 'Harkone VTU',
@@ -249,6 +260,7 @@ class AppConfigModel {
           [],
       googleAuthEnabled: resolveGoogleEnabled(),
       googleClientId: resolveGoogleClientId(),
+      sessionIdleTimeout: resolveIdleTimeout(),
     );
   }
 }
