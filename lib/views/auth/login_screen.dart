@@ -18,11 +18,13 @@ import '../widgets/google_sign_in_button.dart';
 class LoginScreen extends StatefulWidget {
   final Function(Widget) onNavigate;
   final VoidCallback? onLoginSuccess;
+  final String? initialEmail;
 
   const LoginScreen({
     super.key,
     required this.onNavigate,
     this.onLoginSuccess,
+    this.initialEmail,
   });
 
   @override
@@ -41,6 +43,22 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
+    if (widget.initialEmail != null && widget.initialEmail!.trim().isNotEmpty) {
+      _loginController.text = widget.initialEmail!.trim();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_loginController.text.isEmpty && mounted) {
+          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          final cachedEmail = authProvider.user?.email;
+          if (cachedEmail != null && cachedEmail.isNotEmpty) {
+            setState(() {
+              _loginController.text = cachedEmail;
+            });
+          }
+        }
+      });
+    }
+
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
@@ -63,7 +81,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
 
     final result = await authProvider.loginDetailed(
       _loginController.text.trim(),
